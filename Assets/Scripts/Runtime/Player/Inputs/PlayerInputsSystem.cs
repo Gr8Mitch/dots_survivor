@@ -1,4 +1,4 @@
-namespace Survivor.Runtime.Inputs
+namespace Survivor.Runtime.Player.Inputs
 {
     using Unity.Mathematics;
     using UnityEngine;
@@ -27,7 +27,7 @@ namespace Survivor.Runtime.Inputs
                 Debug.LogError($"Input action {InputActionName} asset not found in the resources");
                 return;
             }
-            
+            _actionAsset.Enable();
             _moveAction = _actionAsset.FindAction("Move");
             
             RequireForUpdate<PlayerInputs>();

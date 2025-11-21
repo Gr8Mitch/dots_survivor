@@ -1,4 +1,4 @@
-namespace Survivor.Runtime.Inputs
+namespace Survivor.Runtime.Player.Inputs
 {
     using Unity.Entities;
     using Unity.Mathematics;

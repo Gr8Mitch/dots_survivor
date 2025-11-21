@@ -10,7 +10,7 @@ namespace Survivor.Runtime.Controller
     public struct CharacterController : IComponentData
     {
         // TODO : for now, it takes just the raw inputs for player. We will probably need to smooth them out later.
-        public float2 movement; 
+        public float3 Movement; 
     }
     
     public class CharacterControllerAuthoring : MonoBehaviour

@@ -4,7 +4,6 @@ namespace Survivor.Runtime.Lifecycle
     using Survivor.Runtime.Data;
     using Unity.Burst;
     using Unity.Transforms;
-    using Unity.Mathematics;
     
     [BurstCompile]
     public partial struct PlayerAvatarSpawnSystem : ISystem, ISystemStartStop
@@ -35,11 +34,9 @@ namespace Survivor.Runtime.Lifecycle
             var avatarSpawnerEntity = SystemAPI.GetSingletonEntity<PlayerAvatarSpawner>();
             var avatarEntity = state.WorldUnmanaged.EntityManager.Instantiate(avatarPrefabContainer.PlayerAvatarPrefab);
             var localTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false);
-
             var avatarSpawnTransform = localTransformLookup[avatarSpawnerEntity];
-            // TODO: get the real half height
-            // Adding an offset
-            avatarSpawnTransform.Position += new float3(0f, 2.0f, 0f);
+
+            // No need to add an offset, the anchor of the characters are at the ground level.
             localTransformLookup[avatarEntity] = avatarSpawnTransform;
         }
     }
