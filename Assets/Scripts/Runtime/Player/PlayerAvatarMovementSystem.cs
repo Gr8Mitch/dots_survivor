@@ -1,7 +1,6 @@
-using Unity.Mathematics;
-
 namespace Survivor.Runtime.Player
 {
+    using Unity.Mathematics;
     using Unity.Burst;
     using Unity.Entities;
     using Survivor.Runtime.Controller;

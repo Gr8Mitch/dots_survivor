@@ -1,8 +1,7 @@
-using Survivor.Runtime.Maths;
-using Unity.Collections;
-
 namespace Survivor.Runtime.Controller
 {
+    using Survivor.Runtime.Maths;
+    using Unity.Collections;
     using Survivor.Runtime.Character;
     using Unity.Mathematics;
     using Unity.Physics;

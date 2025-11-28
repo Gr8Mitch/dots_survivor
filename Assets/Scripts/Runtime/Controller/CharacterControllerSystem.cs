@@ -1,8 +1,7 @@
-using Survivor.Runtime.Maths;
-using Unity.Burst.Intrinsics;
-
 namespace Survivor.Runtime.Controller
 {
+    using Survivor.Runtime.Maths;
+    using Unity.Burst.Intrinsics;
     using Unity.Burst;
     using Unity.Entities;
     using Unity.Collections;
