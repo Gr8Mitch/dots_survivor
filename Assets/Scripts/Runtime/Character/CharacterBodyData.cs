@@ -1,7 +1,3 @@
-
-
-using UnityEngine;
-
 namespace Survivor.Runtime.Character
 {
     using Unity.Entities;

@@ -1,8 +1,7 @@
-using Survivor.Runtime.Maths;
-using Unity.Mathematics;
-
 namespace Survivor.Runtime.Character
 {
+    using Survivor.Runtime.Maths;
+    using Unity.Mathematics;
     using UnityEngine;
     using Unity.Entities;
 

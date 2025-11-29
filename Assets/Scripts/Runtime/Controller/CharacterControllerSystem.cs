@@ -12,6 +12,7 @@ namespace Survivor.Runtime.Controller
     using Survivor.Runtime.Physics;
     using Survivor.Runtime.Character;
     using Survivor.Runtime.Player;
+    using Unity.Collections.LowLevel.Unsafe;
 
     /// <summary>
     /// Handles the character movements, including the ground detection.
@@ -21,20 +22,23 @@ namespace Survivor.Runtime.Controller
     [BurstCompile]
     partial struct CharacterControllerSystem : ISystem
     {
+        private struct ControllerTransientData
+        {
+            [NativeDisableContainerSafetyRestriction]
+            public NativeList<ColliderCastHit> ColliderCastHits;
+        }
+        
         private CollisionFilter _castToEnvironmentCollisionFilter;
-        private NativeList<ColliderCastHit> _dummyColliderCastHits;
+        private ControllerTransientData _transientData;
         
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<PhysicsWorldSingleton>();
-
             _castToEnvironmentCollisionFilter = PhysicsUtilities.BuildFilterForRaycast(LayerConstants.ENVIRONMENT_LAYER);
-            _dummyColliderCastHits = new NativeList<ColliderCastHit>(0, Allocator.Persistent);
-        }
-
-        public void OnDestroy(ref SystemState state)
-        {
-            _dummyColliderCastHits.Dispose();
+            _transientData = new ControllerTransientData()
+            {
+                ColliderCastHits = default
+            };
         }
         
         [BurstCompile]
@@ -47,7 +51,7 @@ namespace Survivor.Runtime.Controller
                 PhysicsWorld = physicsWorld,
                 CastToEnvironmentCollisionFilter = _castToEnvironmentCollisionFilter,
                 DeltaTime = SystemAPI.Time.DeltaTime,
-                ColliderCastHits = _dummyColliderCastHits
+                TransientData = _transientData
             }.ScheduleParallel();
         }
 
@@ -67,13 +71,13 @@ namespace Survivor.Runtime.Controller
             /// Contains collider cast hits that is allocated for each chunk.
             /// </summary>
             [NativeDisableParallelForRestriction]
-            public NativeList<ColliderCastHit> ColliderCastHits;
+            public ControllerTransientData TransientData;
             
             public bool OnChunkBegin(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                if (!ColliderCastHits.IsCreated)
+                if (!TransientData.ColliderCastHits.IsCreated)
                 {
-                    ColliderCastHits = new NativeList<ColliderCastHit>(8, Allocator.Temp);
+                    TransientData.ColliderCastHits = new NativeList<ColliderCastHit>(8, Allocator.Temp);
                 }
 
                 return true;
@@ -97,7 +101,7 @@ namespace Survivor.Runtime.Controller
                     in characterPhysicsCollider,
                     in characterComponent,
                     CastToEnvironmentCollisionFilter,
-                    ColliderCastHits);
+                    TransientData.ColliderCastHits);
 
                 // Update the velocity of the character. Project it on the ground normal.
                 float3 groundUp = CharacterControllerUtilities.GROUND_UP;

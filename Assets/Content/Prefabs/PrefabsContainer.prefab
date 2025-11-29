@@ -45,4 +45,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survivor.Runtime.Data.EntityPrefabsContainerAuthoring
   PlayerAvatarPrefab: {fileID: 2609908709428146078, guid: e9dca6749a8506645a6feed73a484ba9, type: 3}
-  EnemiesPrefabs: []
+  EnemiesPrefabs:
+  - {fileID: 2609908709428146078, guid: fc504165b6a0d9d429a90d9f426bb1a6, type: 3}

@@ -5,6 +5,7 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Burst;
     using Unity.Transforms;
     
+    [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     [BurstCompile]
     public partial struct PlayerAvatarSpawnSystem : ISystem, ISystemStartStop
     {
