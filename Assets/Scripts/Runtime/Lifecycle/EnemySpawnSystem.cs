@@ -66,7 +66,7 @@ namespace Survivor.Runtime.Lifecycle
                 if (enemySpawner.LastSpawnTime == float.MinValue)
                 {
                     // The job is running for the first time for this spawner.
-                    enemySpawner.Random = new Random((uint)(entity.Index * 1000));
+                    enemySpawner.Random = new Unity.Mathematics.Random((uint)(entity.Index * 1000));
                     UpdateSpawnData(ref enemySpawner);
                     // No need to spawn anything this time.
                     return;
