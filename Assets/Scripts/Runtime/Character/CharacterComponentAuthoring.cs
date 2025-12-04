@@ -10,6 +10,9 @@ namespace Survivor.Runtime.Character
     /// </summary>
     public struct CharacterComponent : IComponentData
     {
+        // TODO: put most of that in a BlobAsset
+        // And probably in a singleton entity as it should be common to all characters.
+        
         /// <summary>
         /// The maximum speed of the character (m/s).
         /// </summary>
@@ -34,6 +37,18 @@ namespace Survivor.Runtime.Character
         /// The sharpness used for the rotation smoothing
         /// </summary>
         public float RotationSharpness;
+        
+        /// <summary>
+        /// True if we interpolate the position of the character on the ground, instead of using a cast.
+        /// </summary>
+        public bool UseGroundInterpolation;
+
+        /// <summary>
+        /// The time (in s) between casts
+        /// </summary>
+        public float GroundInterpolationDuration;
+
+        public bool UseRaycasts;
     }
     
     public class CharacterComponentAuthoring : MonoBehaviour
@@ -52,6 +67,15 @@ namespace Survivor.Runtime.Character
 
         [Tooltip("The sharpness used for the rotation smoothing.")]
         public float RotationSharpness = 25f;
+
+        [Tooltip("True if we interpolate the position of the character on the ground, instead of using a cast.")]
+        public bool UseGroundInterpolation = false;
+
+        [Tooltip("The time (in s) between casts.")]
+        public float GroundInterpolationDuration = 0.2f;
+        
+        [Tooltip("True to use raycasts instead of collider casts.")]
+        public bool UseRaycasts = false;
         
         class Baker : Baker<CharacterComponentAuthoring>
         {
@@ -64,9 +88,16 @@ namespace Survivor.Runtime.Character
                     GroundedMovementSharpness = authoring.GroundedMovementSharpness,
                     GroundSnappingDistance = authoring.GroundSnappingDistance,
                     MaxGroundedSlopeDotProduct = MathUtilities.AngleRadiansToDotRatio(math.radians(authoring.MaxGroundedSlopeAngle)),
-                    RotationSharpness = authoring.RotationSharpness
+                    RotationSharpness = authoring.RotationSharpness,
+                    UseGroundInterpolation = authoring.UseGroundInterpolation,
+                    GroundInterpolationDuration = authoring.GroundInterpolationDuration,
+                    UseRaycasts = authoring.UseRaycasts
                 });
-                AddComponent(entity, new CharacterBodyData());
+                
+                AddComponent(entity, new CharacterBodyData()
+                {
+                    LastGroundCastTime = float.MinValue
+                });
             }
         }
     }

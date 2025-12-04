@@ -171,9 +171,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemySpawner_0
       objectReference: {fileID: 0}
-    - target: {fileID: 5299432868907543167, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
-      propertyPath: m_IsActive
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: SpawnInterval.x
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: SpawnInterval.y
+      value: 0.01
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -987,6 +995,22 @@ PrefabInstance:
     - target: {fileID: 5299432868907543167, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
       propertyPath: m_Name
       value: EnemySpawner_0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: SpawnRadius
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: SpawnInterval.x
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433664068615817193, guid: ee29aba714353cb41b2f605bb8ee84bf, type: 3}
+      propertyPath: SpawnInterval.y
+      value: 0.01
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

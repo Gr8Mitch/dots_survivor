@@ -26,6 +26,22 @@ namespace Survivor.Runtime.Controller
         {
             [NativeDisableContainerSafetyRestriction]
             public NativeList<ColliderCastHit> ColliderCastHits;
+            
+            [NativeDisableContainerSafetyRestriction]
+            public NativeList<RaycastHit> RaycastHits;
+
+            public void AllocateContainers()
+            {
+                if (!ColliderCastHits.IsCreated)
+                {
+                    ColliderCastHits = new NativeList<ColliderCastHit>(8, Allocator.Temp);
+                }
+                
+                if (!RaycastHits.IsCreated)
+                {
+                    RaycastHits = new NativeList<RaycastHit>(8, Allocator.Temp);
+                }
+            }
         }
         
         private CollisionFilter _castToEnvironmentCollisionFilter;
@@ -51,10 +67,13 @@ namespace Survivor.Runtime.Controller
                 PhysicsWorld = physicsWorld,
                 CastToEnvironmentCollisionFilter = _castToEnvironmentCollisionFilter,
                 DeltaTime = SystemAPI.Time.DeltaTime,
+                ElapsedTime = SystemAPI.Time.ElapsedTime,
                 TransientData = _transientData
             }.ScheduleParallel();
         }
 
+        // TODO: do a IJobChunk to avoid the allocation of the collider cast hits in OnChunkBegin, as it seems buggy.
+        // It would also be easier to handle optional components.
         [BurstCompile]
         private partial struct HandleCharacterMovementsJob : IJobEntity, IJobEntityChunkBeginEnd
         {
@@ -67,6 +86,9 @@ namespace Survivor.Runtime.Controller
             [ReadOnly]
             public float DeltaTime;
 
+            [ReadOnly] 
+            public double ElapsedTime;
+
             /// <summary>
             /// Contains collider cast hits that is allocated for each chunk.
             /// </summary>
@@ -75,18 +97,13 @@ namespace Survivor.Runtime.Controller
             
             public bool OnChunkBegin(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                if (!TransientData.ColliderCastHits.IsCreated)
-                {
-                    TransientData.ColliderCastHits = new NativeList<ColliderCastHit>(8, Allocator.Temp);
-                }
+                TransientData.AllocateContainers();
 
                 return true;
             }
 
             public void OnChunkEnd(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask,
-                bool chunkWasExecuted)
-            {
-            }
+                bool chunkWasExecuted) { }
             
             public unsafe void Execute(Entity characterEntity,
                 ref LocalTransform localTransform, 
@@ -95,14 +112,41 @@ namespace Survivor.Runtime.Controller
                 in PhysicsCollider characterPhysicsCollider,
                 in CharacterComponent characterComponent)
             {
-                CharacterControllerUtilities.ComputeGround(ref localTransform, 
-                    ref characterBodyData, 
-                    ref PhysicsWorld, 
-                    in characterPhysicsCollider,
-                    in characterComponent,
-                    CastToEnvironmentCollisionFilter,
-                    TransientData.ColliderCastHits);
+                bool isInterpolating = characterComponent.UseGroundInterpolation 
+                                       && (ElapsedTime - characterBodyData.LastGroundCastTime) < characterComponent.GroundInterpolationDuration;
 
+                // if (isInterpolating)
+                // {
+                //     CharacterControllerUtilities.InterpolateGround(ref localTransform, 
+                //         ref characterBodyData, 
+                //         in characterPhysicsCollider,
+                //         in characterComponent);
+                // }
+                // else
+                {
+                    if (!characterComponent.UseRaycasts)
+                    {
+                        CharacterControllerUtilities.ComputeGround(ref localTransform, 
+                            ref characterBodyData, 
+                            ref PhysicsWorld, 
+                            in characterPhysicsCollider,
+                            in characterComponent,
+                            CastToEnvironmentCollisionFilter,
+                            TransientData.ColliderCastHits);
+                    }
+                    else
+                    {
+                        CharacterControllerUtilities.ComputeGround(ref localTransform, 
+                            ref characterBodyData, 
+                            ref PhysicsWorld, 
+                            in characterPhysicsCollider,
+                            in characterComponent,
+                            CastToEnvironmentCollisionFilter,
+                            TransientData.RaycastHits);
+                    }
+                }
+
+                
                 // Update the velocity of the character. Project it on the ground normal.
                 float3 groundUp = CharacterControllerUtilities.GROUND_UP;
                 if (characterBodyData.IsGrounded)
@@ -113,19 +157,53 @@ namespace Survivor.Runtime.Controller
 
                 // Check if there is any collision in the direction of the movement with a cast. If so, snap it to the collision point.
                 // It may need multiple iterations to find the right point.
-                CharacterControllerUtilities.ComputeHitsMovement(ref localTransform, 
-                    ref characterBodyData, 
-                    ref PhysicsWorld, 
-                    in characterPhysicsCollider,
-                    in characterComponent,
-                    CastToEnvironmentCollisionFilter,
-                    DeltaTime);
+                // if (isInterpolating)
+                // {
+                //     CharacterControllerUtilities.InterpolateHitsMovement(ref localTransform, 
+                //         ref characterBodyData, 
+                //         ref PhysicsWorld, 
+                //         in characterPhysicsCollider,
+                //         in characterComponent,
+                //         CastToEnvironmentCollisionFilter,
+                //         DeltaTime);
+                //     
+                // }
+                // else
+                // {
+                if (!characterComponent.UseRaycasts)
+                {
+                    CharacterControllerUtilities.ComputeHitsMovement(ref localTransform, 
+                        ref characterBodyData, 
+                        ref PhysicsWorld, 
+                        in characterPhysicsCollider,
+                        in characterComponent,
+                        CastToEnvironmentCollisionFilter,
+                        DeltaTime);
+                }
+                else
+                {
+                    CharacterControllerUtilities.ComputeHitsMovementRaycast(ref localTransform, 
+                        ref characterBodyData, 
+                        ref PhysicsWorld, 
+                        in characterPhysicsCollider,
+                        in characterComponent,
+                        CastToEnvironmentCollisionFilter,
+                        DeltaTime);
+                }
+
+                // }
+
                 
                 // Rotate the character to face the direction of the movement.
                 if (math.lengthsq(characterController.Movement) > 0f)
                 {
                     CharacterControllerUtilities.SlerpRotationTowardsDirectionAroundUp(ref localTransform.Rotation, DeltaTime, 
                         math.normalizesafe(characterController.Movement), MathUtilities.GetUpFromRotation(localTransform.Rotation), characterComponent.RotationSharpness);
+                }
+
+                if (!isInterpolating)
+                {
+                    characterBodyData.LastGroundCastTime = ElapsedTime;
                 }
             }
         }

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 118734096395079249}
   - component: {fileID: 3706345578131937606}
   - component: {fileID: 2327896147716858600}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -100,7 +100,7 @@ GameObject:
   - component: {fileID: 1463082427159710792}
   - component: {fileID: 3021860484397497320}
   - component: {fileID: 7365137630458246117}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -187,12 +187,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4733280915138840526}
-  - component: {fileID: 2917678119075425679}
+  - component: {fileID: 1484524850504766120}
   - component: {fileID: 6596645873158006319}
   - component: {fileID: -4537746716070167514}
   - component: {fileID: 2358743733546191122}
   - component: {fileID: 5421477800021948669}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: Enemy_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -216,8 +216,8 @@ Transform:
   - {fileID: 1463082427159710792}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!136 &2917678119075425679
-CapsuleCollider:
+--- !u!135 &1484524850504766120
+SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -234,11 +234,9 @@ CapsuleCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 1, z: 0}
+  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!114 &6596645873158006319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -268,6 +266,9 @@ MonoBehaviour:
   GroundedMovementSharpness: 15
   MaxGroundedSlopeAngle: 60
   RotationSharpness: 25
+  UseGroundInterpolation: 0
+  GroundInterpolationDuration: 0.2
+  UseRaycasts: 0
 --- !u!54 &2358743733546191122
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -307,4 +308,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 221cd1a97628c6541ae30012ce96511d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Character.EnemyCharacterComponentAuthoring
-  EnemyId: 0
+  EnemyTypeId: 0

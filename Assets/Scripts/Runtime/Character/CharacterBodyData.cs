@@ -1,3 +1,5 @@
+using Unity.Physics;
+
 namespace Survivor.Runtime.Character
 {
     using Unity.Entities;
@@ -8,15 +10,31 @@ namespace Survivor.Runtime.Character
     /// </summary>
     public readonly struct HitData
     {
+        public static readonly HitData NULL = new HitData(Entity.Null);
+        
         public readonly Entity Entity;
         public readonly int RigidBodyIndex;
+        /// <summary>
+        /// Hit collider key
+        /// </summary>
+        public readonly ColliderKey ColliderKey;
         public readonly float3 Position;
         public readonly float3 Normal;
 
+        private HitData(Entity entity)
+        {
+            Entity = entity;
+            RigidBodyIndex = 0;
+            ColliderKey = ColliderKey.Empty;
+            Position = float3.zero;
+            Normal = float3.zero;
+        }
+        
         public HitData(Unity.Physics.RaycastHit hit)
         {
             Entity = hit.Entity;
             RigidBodyIndex = hit.RigidBodyIndex;
+            ColliderKey = hit.ColliderKey;
             Position = hit.Position;
             Normal = hit.SurfaceNormal;
         }
@@ -25,9 +43,12 @@ namespace Survivor.Runtime.Character
         {
             Entity = hit.Entity;
             RigidBodyIndex = hit.RigidBodyIndex;
+            ColliderKey = hit.ColliderKey;
             Position = hit.Position;
             Normal = hit.SurfaceNormal;
         }
+        
+        public bool IsValid => Entity != Entity.Null;
     }
 
     /// <summary>
@@ -38,5 +59,15 @@ namespace Survivor.Runtime.Character
         public float3 Velocity;
         public HitData GroundHitData;
         public bool IsGrounded;
+        
+        // TODO: move this somewhere else?
+        public float3 LastGroundPosition;
+        
+        /// <summary>
+        /// The last elapsed time when a cast was done.
+        /// </summary>
+        public double LastGroundCastTime;
+
+        public HitData ObstacleHitData;
     }
 }

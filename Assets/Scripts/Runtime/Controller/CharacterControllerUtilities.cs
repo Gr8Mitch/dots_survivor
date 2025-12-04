@@ -34,6 +34,7 @@ namespace Survivor.Runtime.Controller
         /// <param name="characterPhysicsCollider"> Used to generate the ColliderCastInput. </param>
         /// <param name="characterComponent"> Contains some settings, like the cast distance. </param>
         /// <param name="castToEnvironmentCollisionFilter"> The collision filter to use for the collider cast. </param>
+        /// <param name="colliderCastHits"> A list to store <see cref="ColliderCastHit"/>. </param>
         public static unsafe void ComputeGround(ref LocalTransform localTransform, 
             ref CharacterBodyData characterBodyData,
             ref PhysicsWorld physicsWorld,
@@ -45,28 +46,35 @@ namespace Survivor.Runtime.Controller
             quaternion characterRotation = localTransform.Rotation;
             ref float3 characterPosition = ref localTransform.Position;
             float3 groundUp = CharacterControllerUtilities.GROUND_UP;
-                
-            // Make a copy of the collider to change its collision filter while keeping its form.
-            if (characterPhysicsCollider.Value.Value.Type != ColliderType.Capsule)
-            {
-                UnityEngine.Debug.LogError("The character collider is not a capsule collider, characters should have only one character for now.");
-                return;
-            }
-                
-            CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
-            CapsuleCollider castCollider = new CapsuleCollider();
-            castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
-                
             // Cast collider to the ground to see if the character is grounded. Snap the position if necessary
             float castLength = characterComponent.GroundSnappingDistance;
             float3 castDirection = -groundUp;
-            var colliderCastInput = new ColliderCastInput()
+            
+            ColliderCastInput colliderCastInput;
+            float3 castStart = characterPosition;
+            float3 castEnd = characterPosition + castLength * castDirection;
+            
+            // Make a copy of the collider to change its collision filter while keeping its form.
+            if (characterPhysicsCollider.Value.Value.Type == ColliderType.Capsule)
             {
-                Collider = (Collider*)&castCollider,
-                Start = characterPosition,
-                End = characterPosition + castLength * castDirection,
-                Orientation = characterRotation
-            };
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                CapsuleCollider castCollider = new CapsuleCollider();
+                castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
+                colliderCastInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, characterRotation);
+            }
+            else if (characterPhysicsCollider.Value.Value.Type == ColliderType.Sphere)
+            {
+                SphereCollider* originalCollider = (SphereCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                SphereCollider castCollider = new SphereCollider();
+                castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
+                colliderCastInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, characterRotation);
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
+                return;
+            }
+            
             colliderCastHits.Clear();
             AllHitsCollector<ColliderCastHit> collector = new AllHitsCollector<ColliderCastHit>(1f, ref colliderCastHits);
             var hasCollided = physicsWorld.CastCollider(colliderCastInput, ref collector);
@@ -96,6 +104,90 @@ namespace Survivor.Runtime.Controller
                 float distanceToGround = closestHit.Fraction * castLength;
                 characterPosition += (CharacterControllerUtilities.GROUND_SNAP_OFFSET - distanceToGround) * groundUp;
             }
+            
+            characterBodyData.LastGroundPosition = characterPosition;
+        }
+        
+        public static unsafe void ComputeGround(ref LocalTransform localTransform, 
+            ref CharacterBodyData characterBodyData,
+            ref PhysicsWorld physicsWorld,
+            in PhysicsCollider characterPhysicsCollider,
+            in CharacterComponent characterComponent,
+            CollisionFilter castToEnvironmentCollisionFilter,
+            NativeList<RaycastHit> rayastHits)
+        {
+            ref float3 characterPosition = ref localTransform.Position;
+            float3 groundUp = CharacterControllerUtilities.GROUND_UP;
+            // Cast collider to the ground to see if the character is grounded. Snap the position if necessary
+            float castLength = characterComponent.GroundSnappingDistance;
+            float3 castDirection = -groundUp;
+            
+            float colliderHalfHeight = 0f;
+            if (characterPhysicsCollider.Value.Value.Type == ColliderType.Capsule)
+            {
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderHalfHeight = originalCollider->Geometry.GetHeight() * 0.5f;
+            }
+            else if (characterPhysicsCollider.Value.Value.Type == ColliderType.Sphere)
+            {
+                SphereCollider* originalCollider = (SphereCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderHalfHeight = originalCollider->Geometry.Radius;
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
+                return;
+            }
+            
+            float3 castStart = characterPosition - (castLength + colliderHalfHeight) * castDirection;
+            float3 castEnd = characterPosition + (castLength + colliderHalfHeight) * castDirection;
+            
+            rayastHits.Clear();
+            RaycastInput colliderCastInput = new RaycastInput()
+            {
+                Start = castStart,
+                End = castEnd,
+                Filter = castToEnvironmentCollisionFilter
+            };
+            AllHitsCollector<RaycastHit> collector = new AllHitsCollector<RaycastHit>(1f, ref rayastHits);
+            var hasCollided = false;
+            physicsWorld.CastRay(colliderCastInput, ref collector);
+            RaycastHit closestHit = default;
+            closestHit.Fraction = float.MaxValue;
+            
+            foreach (var hit in collector.AllHits)
+            {
+                // ignore hits if we're going away from them
+                float dotRatio = math.dot(hit.SurfaceNormal, castDirection);
+                if (dotRatio < -math.EPSILON && IsGroundedOnSlopeNormal(characterComponent.MaxGroundedSlopeDotProduct, hit.SurfaceNormal, groundUp))
+                {
+                    if (hit.Fraction < closestHit.Fraction)
+                    {
+                        closestHit = hit;
+                        hasCollided = true;
+                    }
+                }
+            }
+            
+            characterBodyData.GroundHitData = new HitData(closestHit);
+            characterBodyData.IsGrounded = hasCollided;
+                
+            if (hasCollided)
+            {
+                // Snap on the ground.
+                float distanceToGround = closestHit.Fraction * 2 * (castLength + colliderHalfHeight) - (castLength + colliderHalfHeight);
+                characterPosition += (CharacterControllerUtilities.GROUND_SNAP_OFFSET - distanceToGround) * groundUp;
+            }
+            
+            characterBodyData.LastGroundPosition = characterPosition;
+        }
+
+        public static void InterpolateGround(ref LocalTransform localTransform,
+            ref CharacterBodyData characterBodyData,
+            in PhysicsCollider characterPhysicsCollider,
+            in CharacterComponent characterComponent)
+        {
+
         }
 
         public static unsafe void ComputeHitsMovement(ref LocalTransform localTransform, 
@@ -109,18 +201,29 @@ namespace Survivor.Runtime.Controller
              // TODO: iterate multiple times to integrate all the collisions more accurately?
             float3 castStart = localTransform.Position;
             float3 castEnd = localTransform.Position + characterBodyData.Velocity * deltaTime;
-            
+
+            ColliderCastInput castInput;
             // Make a copy of the collider to change its collision filter while keeping its form.
-            if (characterPhysicsCollider.Value.Value.Type != ColliderType.Capsule)
+            if (characterPhysicsCollider.Value.Value.Type == ColliderType.Capsule)
             {
-                UnityEngine.Debug.LogError("The character collider is not a capsule collider, characters should have only one character for now.");
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                CapsuleCollider castCollider = new CapsuleCollider();
+                castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
+                castInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, localTransform.Rotation);
+            }
+            else if (characterPhysicsCollider.Value.Value.Type == ColliderType.Sphere)
+            {
+                SphereCollider* originalCollider = (SphereCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                SphereCollider castCollider = new SphereCollider();
+                castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
+                castInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, localTransform.Rotation);
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
                 return;
             }
             
-            CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
-            CapsuleCollider castCollider = new CapsuleCollider();
-            castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
-            ColliderCastInput castInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, localTransform.Rotation);
             bool hasHitObstacle = physicsWorld.CastCollider(castInput, out ColliderCastHit hit);
             
             float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
@@ -145,8 +248,248 @@ namespace Survivor.Runtime.Controller
                     characterBodyData.Velocity = math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
                     movementDirection = math.normalizesafe(characterBodyData.Velocity);
                 }
+
+                characterBodyData.ObstacleHitData = new HitData(hit);
+            }
+            else
+            {
+                characterBodyData.ObstacleHitData = HitData.NULL;
             }
             
+            localTransform.Position += movementDirection * remainingDistance;
+        }
+        
+        public static unsafe void ComputeHitsMovementRaycast(ref LocalTransform localTransform, 
+            ref CharacterBodyData characterBodyData,
+            ref PhysicsWorld physicsWorld,
+            in PhysicsCollider characterPhysicsCollider,
+            in CharacterComponent characterComponent,
+            CollisionFilter castToEnvironmentCollisionFilter,
+            float deltaTime)
+        {
+            float colliderRadius = 0f;
+            float colliderHalfHeight = 0f;
+            if (characterPhysicsCollider.Value.Value.Type == ColliderType.Capsule)
+            {
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderRadius = originalCollider->Geometry.Radius;
+                colliderHalfHeight = originalCollider->Geometry.GetHeight() * 0.5f;
+            }
+            else if (characterPhysicsCollider.Value.Value.Type == ColliderType.Sphere)
+            {
+                SphereCollider* originalCollider = (SphereCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderRadius = originalCollider->Geometry.Radius;
+                colliderHalfHeight = colliderRadius;
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
+                return;
+            }
+            
+            // TODO: iterate multiple times to integrate all the collisions more accurately?
+            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
+            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            float3 transformUp = math.mul(localTransform.Rotation, math.up());
+            float3 transformForward = math.mul(localTransform.Rotation, math.forward());
+            float forwardDistance = 0.01f;
+            float rayLength = remainingDistance + 2 * colliderRadius;
+            float3 castStart = localTransform.Position + transformUp * colliderHalfHeight - movementDirection * colliderRadius;
+            float3 castEnd = castStart + movementDirection * rayLength + transformForward * forwardDistance;
+            RaycastInput castInput = new RaycastInput()
+            {
+                Start = castStart,
+                End = castEnd,
+                Filter = castToEnvironmentCollisionFilter
+            };
+            
+            bool hasHitObstacle = physicsWorld.CastRay(castInput, out RaycastHit hit);
+            
+            if (hasHitObstacle)
+            {
+                float3 groundUp = CharacterControllerUtilities.GROUND_UP;
+                bool isGroundedOnSlope = IsGroundedOnSlopeNormal(characterComponent.MaxGroundedSlopeDotProduct, hit.SurfaceNormal, groundUp);
+                if (isGroundedOnSlope)
+                {
+                    characterBodyData.Velocity = MathUtilities.ReorientVectorOnPlaneAlongDirection(characterBodyData.Velocity, hit.SurfaceNormal, groundUp);
+                }
+                else if (math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < math.EPSILON)
+                {
+                    // float offsetToColliderBorder = 
+                    // float distanceToHit = rayLength * hit.Fraction - 2 * colliderRadius;
+                    float distanceToHit = math.dot(-hit.SurfaceNormal, movementDirection) *
+                                          (rayLength * hit.Fraction - 2 * colliderRadius);
+                    remainingDistance -= distanceToHit;
+                    localTransform.Position += movementDirection * distanceToHit;
+
+                    // Project the velocity on the hits
+                    float3 groundedCreaseDirection =
+                        math.normalizesafe(math.cross(characterBodyData.GroundHitData.Normal, hit.SurfaceNormal));
+                    characterBodyData.Velocity = math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
+                    movementDirection = math.normalizesafe(characterBodyData.Velocity);
+                }
+
+                characterBodyData.ObstacleHitData = new HitData(hit);
+            }
+            else
+            { characterBodyData.ObstacleHitData = HitData.NULL;
+            }
+            
+            localTransform.Position += movementDirection * remainingDistance;
+        }
+        
+        public static unsafe void ComputeHitsMovementDualRaycast(ref LocalTransform localTransform, 
+            ref CharacterBodyData characterBodyData,
+            ref PhysicsWorld physicsWorld,
+            in PhysicsCollider characterPhysicsCollider,
+            in CharacterComponent characterComponent,
+            CollisionFilter castToEnvironmentCollisionFilter,
+            float deltaTime)
+        {
+            float colliderRadius = 0f;
+            float colliderHalfHeight = 0f;
+            if (characterPhysicsCollider.Value.Value.Type == ColliderType.Capsule)
+            {
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderRadius = originalCollider->Geometry.Radius;
+                colliderHalfHeight = originalCollider->Geometry.GetHeight() * 0.5f;
+            }
+            else if (characterPhysicsCollider.Value.Value.Type == ColliderType.Sphere)
+            {
+                SphereCollider* originalCollider = (SphereCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                colliderRadius = originalCollider->Geometry.Radius;
+                colliderHalfHeight = colliderRadius;
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
+                return;
+            }
+
+            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
+            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            float3 transformUp = math.mul(localTransform.Rotation, math.up());
+            float3 transformForward = math.mul(localTransform.Rotation, math.forward());
+            float3 transformRight = math.mul(localTransform.Rotation, math.right());
+            float rightOffset = -colliderRadius;
+            bool hasCollided = false;
+            
+            for (int i = 0; i < 2; ++i)
+            {
+                // TODO: iterate multiple times to integrate all the collisions more accurately?
+                float forwardDistance = 0.01f;
+                float rayLength = remainingDistance + 2 * colliderRadius;
+                float3 castStart = localTransform.Position + transformUp * colliderHalfHeight -
+                                   movementDirection * colliderRadius + rightOffset * transformRight;
+                float3 castEnd = castStart + movementDirection * rayLength + transformForward * forwardDistance;
+                RaycastInput castInput = new RaycastInput()
+                {
+                    Start = castStart,
+                    End = castEnd,
+                    Filter = castToEnvironmentCollisionFilter
+                };
+
+                bool hasHitObstacle = physicsWorld.CastRay(castInput, out RaycastHit hit);
+
+                if (hasHitObstacle)
+                {
+                    float3 groundUp = CharacterControllerUtilities.GROUND_UP;
+                    bool isGroundedOnSlope = IsGroundedOnSlopeNormal(characterComponent.MaxGroundedSlopeDotProduct,
+                        hit.SurfaceNormal, groundUp);
+                    if (isGroundedOnSlope)
+                    {
+                        characterBodyData.Velocity =
+                            MathUtilities.ReorientVectorOnPlaneAlongDirection(characterBodyData.Velocity,
+                                hit.SurfaceNormal, groundUp);
+                    }
+                    else if (math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < math.EPSILON)
+                    {
+                        // float offsetToColliderBorder = 
+                        // float distanceToHit = rayLength * hit.Fraction - 2 * colliderRadius;
+                        float distanceToHit = math.dot(-hit.SurfaceNormal, movementDirection) *
+                                              (rayLength * hit.Fraction - 2 * colliderRadius);
+                        remainingDistance -= distanceToHit;
+                        localTransform.Position += movementDirection * distanceToHit;
+
+                        // Project the velocity on the hits
+                        float3 groundedCreaseDirection =
+                            math.normalizesafe(math.cross(characterBodyData.GroundHitData.Normal, hit.SurfaceNormal));
+                        characterBodyData.Velocity =
+                            math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
+                        movementDirection = math.normalizesafe(characterBodyData.Velocity);
+                    }
+
+                    characterBodyData.ObstacleHitData = new HitData(hit);
+                    hasCollided = true;
+                    break;
+                }
+
+                rightOffset += 2 * colliderRadius;
+            }
+            
+            if (!hasCollided)
+            {
+                characterBodyData.ObstacleHitData = HitData.NULL;
+            }
+            
+            localTransform.Position += movementDirection * remainingDistance;
+        }
+
+        public static unsafe void InterpolateHitsMovement(ref LocalTransform localTransform, 
+            ref CharacterBodyData characterBodyData,
+            ref PhysicsWorld physicsWorld,
+            in PhysicsCollider characterPhysicsCollider,
+            in CharacterComponent characterComponent,
+            CollisionFilter castToEnvironmentCollisionFilter,
+            float deltaTime)
+        {
+            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
+            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            
+            if (characterBodyData.ObstacleHitData.IsValid)
+            {
+                int rigidBodyIndex = physicsWorld.GetRigidBodyIndex(characterBodyData.ObstacleHitData.Entity);
+                var body = physicsWorld.Bodies[rigidBodyIndex];
+                             // TODO: iterate multiple times to integrate all the collisions more accurately?
+                float3 castStart = localTransform.Position;
+                float3 castEnd = localTransform.Position + characterBodyData.Velocity * deltaTime;
+                
+                // Make a copy of the collider to change its collision filter while keeping its form.
+                if (characterPhysicsCollider.Value.Value.Type != ColliderType.Capsule)
+                {
+                    UnityEngine.Debug.LogError("The character collider is not a capsule collider, characters should have only one character for now.");
+                    return;
+                }
+                
+                CapsuleCollider* originalCollider = (CapsuleCollider*)characterPhysicsCollider.Value.GetUnsafePtr();
+                CapsuleCollider castCollider = new CapsuleCollider();
+                castCollider.Initialize(originalCollider->Geometry, castToEnvironmentCollisionFilter, originalCollider->Material);
+                ColliderCastInput castInput = new ColliderCastInput(characterPhysicsCollider.Value, castStart, castEnd, localTransform.Rotation);
+                bool hasHitObstacle = body.CastCollider(castInput, out ColliderCastHit hit);
+                
+                if (hasHitObstacle)
+                {
+                    float3 groundUp = CharacterControllerUtilities.GROUND_UP;
+                    bool isGroundedOnSlope = IsGroundedOnSlopeNormal(characterComponent.MaxGroundedSlopeDotProduct, hit.SurfaceNormal, groundUp);
+                    if (isGroundedOnSlope)
+                    {
+                        characterBodyData.Velocity = MathUtilities.ReorientVectorOnPlaneAlongDirection(characterBodyData.Velocity, hit.SurfaceNormal, groundUp);
+                    }
+                    else if (math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < math.EPSILON)
+                    {
+                        float distanceToHit = remainingDistance * hit.Fraction;
+                        remainingDistance -= distanceToHit;
+                        localTransform.Position += movementDirection * distanceToHit;
+
+                        // Project the velocity on the hits
+                        float3 groundedCreaseDirection =
+                            math.normalizesafe(math.cross(characterBodyData.GroundHitData.Normal, hit.SurfaceNormal));
+                        characterBodyData.Velocity = math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
+                        movementDirection = math.normalizesafe(characterBodyData.Velocity);
+                    }
+                }
+            }
+
             localTransform.Position += movementDirection * remainingDistance;
         }
         

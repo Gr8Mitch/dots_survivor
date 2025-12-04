@@ -102,5 +102,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43f0be49ce61b9b49aede9fdf05e0de7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Lifecycle.EnemySpawnerAuthoring
-  EnemyType: 0
+  EnemyTypeId: 0
+  SpawnRadius: 2
   SpawnInterval: {x: 1, y: 2}

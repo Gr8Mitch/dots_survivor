@@ -17,12 +17,16 @@ namespace Survivor.Runtime.Lifecycle
     [BurstCompile]
     partial struct EnemySpawnSystem : ISystem
     {
+        private const int MAX_ENEMIES = 300;
+        
         private EntityQuery _spawnerEntityQuery;
+        private EntityQuery _enemiesQuery;
         
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             _spawnerEntityQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld>().WithAllRW<EnemySpawner>().Build();
+            _enemiesQuery = SystemAPI.QueryBuilder().WithAll<EnemyCharacterComponent>().Build();
             state.RequireForUpdate(_spawnerEntityQuery);
             state.RequireForUpdate<EnemyPrefabsContainer>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
@@ -31,6 +35,11 @@ namespace Survivor.Runtime.Lifecycle
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            if (_enemiesQuery.CalculateEntityCount() >= MAX_ENEMIES)
+            {
+                return;
+            }
+            
             var enemiesPrefabs = SystemAPI.GetSingletonBuffer<EnemyPrefabsContainer>();
             var ecbParallel = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>()
                 .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
