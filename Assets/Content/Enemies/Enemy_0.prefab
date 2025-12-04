@@ -266,9 +266,9 @@ MonoBehaviour:
   GroundedMovementSharpness: 15
   MaxGroundedSlopeAngle: 60
   RotationSharpness: 25
-  UseGroundInterpolation: 0
-  GroundInterpolationDuration: 0.2
-  UseRaycasts: 0
+  UseGroundInterpolation: 1
+  GroundInterpolationDuration: 0.1
+  UseRaycastsForGround: 1
 --- !u!54 &2358743733546191122
 Rigidbody:
   m_ObjectHideFlags: 0

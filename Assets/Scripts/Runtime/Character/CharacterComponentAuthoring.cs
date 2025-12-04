@@ -4,15 +4,11 @@ namespace Survivor.Runtime.Character
     using Unity.Mathematics;
     using UnityEngine;
     using Unity.Entities;
+    using Unity.Collections;
+    using UnityEngine.Serialization;
 
-    /// <summary>
-    /// Component to add to the player entity and the enemies entities (for now).
-    /// </summary>
-    public struct CharacterComponent : IComponentData
+    public struct CharacterSettings
     {
-        // TODO: put most of that in a BlobAsset
-        // And probably in a singleton entity as it should be common to all characters.
-        
         /// <summary>
         /// The maximum speed of the character (m/s).
         /// </summary>
@@ -48,11 +44,20 @@ namespace Survivor.Runtime.Character
         /// </summary>
         public float GroundInterpolationDuration;
 
-        public bool UseRaycasts;
+        public bool UseRaycastsForGround;
+    }
+    
+    /// <summary>
+    /// Component to add to the player entity and the enemies entities (for now).
+    /// </summary>
+    public struct CharacterComponent : IComponentData
+    {
+        public BlobAssetReference<CharacterSettings> Settings;
     }
     
     public class CharacterComponentAuthoring : MonoBehaviour
     {
+        // TODO: put some settings in a scriptable object common to all characters or enemies?
         [Tooltip("The maximum speed of the character (m/s).")]
         public float MovementMaxSpeed = 15f;
 
@@ -74,24 +79,40 @@ namespace Survivor.Runtime.Character
         [Tooltip("The time (in s) between casts.")]
         public float GroundInterpolationDuration = 0.2f;
         
-        [Tooltip("True to use raycasts instead of collider casts.")]
-        public bool UseRaycasts = false;
+        [FormerlySerializedAs("UseRaycasts")] [Tooltip("True to use raycasts instead of collider casts for the ground computation.")]
+        public bool UseRaycastsForGround = false;
         
         class Baker : Baker<CharacterComponentAuthoring>
         {
             public override void Bake(CharacterComponentAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.None);
+                
+                // Create the blob asset
+                var builder = new BlobBuilder(Allocator.Temp);
+                ref CharacterSettings characterSettings = ref builder.ConstructRoot<CharacterSettings>();
+                
+                characterSettings.MovementMaxSpeed = authoring.MovementMaxSpeed;
+                characterSettings.GroundedMovementSharpness = authoring.GroundedMovementSharpness;
+                characterSettings.GroundSnappingDistance = authoring.GroundSnappingDistance;
+                characterSettings.MaxGroundedSlopeDotProduct = MathUtilities.AngleRadiansToDotRatio(math.radians(authoring.MaxGroundedSlopeAngle));
+                characterSettings.RotationSharpness = authoring.RotationSharpness;
+                characterSettings.UseGroundInterpolation = authoring.UseGroundInterpolation;
+                characterSettings.GroundInterpolationDuration = authoring.GroundInterpolationDuration;
+                characterSettings.UseRaycastsForGround = authoring.UseRaycastsForGround;
+                
+                var blobReference =
+                    builder.CreateBlobAssetReference<CharacterSettings>(Allocator.Persistent);
+                
+                builder.Dispose();
+
+                // Register the Blob Asset to the Baker for de-duplication and reverting.
+                AddBlobAsset<CharacterSettings>(ref blobReference, out var hash);
+                
+                // Add the component
                 AddComponent(entity, new CharacterComponent()
                 {
-                    MovementMaxSpeed = authoring.MovementMaxSpeed,
-                    GroundedMovementSharpness = authoring.GroundedMovementSharpness,
-                    GroundSnappingDistance = authoring.GroundSnappingDistance,
-                    MaxGroundedSlopeDotProduct = MathUtilities.AngleRadiansToDotRatio(math.radians(authoring.MaxGroundedSlopeAngle)),
-                    RotationSharpness = authoring.RotationSharpness,
-                    UseGroundInterpolation = authoring.UseGroundInterpolation,
-                    GroundInterpolationDuration = authoring.GroundInterpolationDuration,
-                    UseRaycasts = authoring.UseRaycasts
+                    Settings = blobReference
                 });
                 
                 AddComponent(entity, new CharacterBodyData()

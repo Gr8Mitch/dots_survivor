@@ -1,9 +1,8 @@
-using Unity.Physics;
-
 namespace Survivor.Runtime.Character
 {
     using Unity.Entities;
     using Unity.Mathematics;
+    using Unity.Physics;
 
     /// <summary>
     /// A struct that can be built from all the hits types (<see cref="Unity.Physics.RaycastHit"/>, <see cref="Unity.Physics.ColliderCastHit"/>, etc.)
@@ -67,7 +66,5 @@ namespace Survivor.Runtime.Character
         /// The last elapsed time when a cast was done.
         /// </summary>
         public double LastGroundCastTime;
-
-        public HitData ObstacleHitData;
     }
 }

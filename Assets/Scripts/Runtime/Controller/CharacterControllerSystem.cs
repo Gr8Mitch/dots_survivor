@@ -90,7 +90,7 @@ namespace Survivor.Runtime.Controller
             public double ElapsedTime;
 
             /// <summary>
-            /// Contains collider cast hits that is allocated for each chunk.
+            /// Contains collider/raycast cast hit containers that are allocated once for each chunk.
             /// </summary>
             [NativeDisableParallelForRestriction]
             public ControllerTransientData TransientData;
@@ -112,19 +112,20 @@ namespace Survivor.Runtime.Controller
                 in PhysicsCollider characterPhysicsCollider,
                 in CharacterComponent characterComponent)
             {
-                bool isInterpolating = characterComponent.UseGroundInterpolation 
-                                       && (ElapsedTime - characterBodyData.LastGroundCastTime) < characterComponent.GroundInterpolationDuration;
+                ref CharacterSettings settings = ref characterComponent.Settings.Value;
+                bool isInterpolating = settings.UseGroundInterpolation 
+                                       && (ElapsedTime - characterBodyData.LastGroundCastTime) < settings.GroundInterpolationDuration;
 
-                // if (isInterpolating)
-                // {
-                //     CharacterControllerUtilities.InterpolateGround(ref localTransform, 
-                //         ref characterBodyData, 
-                //         in characterPhysicsCollider,
-                //         in characterComponent);
-                // }
-                // else
+                if (isInterpolating)
                 {
-                    if (!characterComponent.UseRaycasts)
+                    CharacterControllerUtilities.InterpolateGround(ref localTransform, 
+                        ref characterBodyData, 
+                        in characterPhysicsCollider,
+                        in characterComponent);
+                }
+                else
+                {
+                    if (!settings.UseRaycastsForGround)
                     {
                         CharacterControllerUtilities.ComputeGround(ref localTransform, 
                             ref characterBodyData, 
@@ -136,7 +137,7 @@ namespace Survivor.Runtime.Controller
                     }
                     else
                     {
-                        CharacterControllerUtilities.ComputeGround(ref localTransform, 
+                        CharacterControllerUtilities.ComputeGroundRaycast(ref localTransform, 
                             ref characterBodyData, 
                             ref PhysicsWorld, 
                             in characterPhysicsCollider,
@@ -145,60 +146,29 @@ namespace Survivor.Runtime.Controller
                             TransientData.RaycastHits);
                     }
                 }
-
                 
                 // Update the velocity of the character. Project it on the ground normal.
                 float3 groundUp = CharacterControllerUtilities.GROUND_UP;
                 if (characterBodyData.IsGrounded)
                 {
-                    float3 targetVelocity =  characterComponent.MovementMaxSpeed * characterController.Movement;
-                    CharacterControllerUtilities.InterpolateGroundMovement(ref characterBodyData.Velocity, targetVelocity, characterComponent.GroundedMovementSharpness, DeltaTime, groundUp, characterBodyData.GroundHitData.Normal);
+                    float3 targetVelocity =  settings.MovementMaxSpeed * characterController.Movement;
+                    CharacterControllerUtilities.InterpolateGroundMovement(ref characterBodyData.Velocity, targetVelocity, settings.GroundedMovementSharpness, DeltaTime, groundUp, characterBodyData.GroundHitData.Normal);
                 }
 
                 // Check if there is any collision in the direction of the movement with a cast. If so, snap it to the collision point.
-                // It may need multiple iterations to find the right point.
-                // if (isInterpolating)
-                // {
-                //     CharacterControllerUtilities.InterpolateHitsMovement(ref localTransform, 
-                //         ref characterBodyData, 
-                //         ref PhysicsWorld, 
-                //         in characterPhysicsCollider,
-                //         in characterComponent,
-                //         CastToEnvironmentCollisionFilter,
-                //         DeltaTime);
-                //     
-                // }
-                // else
-                // {
-                if (!characterComponent.UseRaycasts)
-                {
-                    CharacterControllerUtilities.ComputeHitsMovement(ref localTransform, 
-                        ref characterBodyData, 
-                        ref PhysicsWorld, 
-                        in characterPhysicsCollider,
-                        in characterComponent,
-                        CastToEnvironmentCollisionFilter,
-                        DeltaTime);
-                }
-                else
-                {
-                    CharacterControllerUtilities.ComputeHitsMovementRaycast(ref localTransform, 
-                        ref characterBodyData, 
-                        ref PhysicsWorld, 
-                        in characterPhysicsCollider,
-                        in characterComponent,
-                        CastToEnvironmentCollisionFilter,
-                        DeltaTime);
-                }
-
-                // }
-
+                CharacterControllerUtilities.ComputeHitsMovement(ref localTransform, 
+                    ref characterBodyData, 
+                    ref PhysicsWorld, 
+                    in characterPhysicsCollider,
+                    in characterComponent,
+                    CastToEnvironmentCollisionFilter,
+                    DeltaTime);
                 
                 // Rotate the character to face the direction of the movement.
                 if (math.lengthsq(characterController.Movement) > 0f)
                 {
                     CharacterControllerUtilities.SlerpRotationTowardsDirectionAroundUp(ref localTransform.Rotation, DeltaTime, 
-                        math.normalizesafe(characterController.Movement), MathUtilities.GetUpFromRotation(localTransform.Rotation), characterComponent.RotationSharpness);
+                        math.normalizesafe(characterController.Movement), MathUtilities.GetUpFromRotation(localTransform.Rotation), settings.RotationSharpness);
                 }
 
                 if (!isInterpolating)

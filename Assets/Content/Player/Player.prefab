@@ -271,7 +271,7 @@ MonoBehaviour:
   RotationSharpness: 25
   UseGroundInterpolation: 0
   GroundInterpolationDuration: 0.05
-  UseRaycasts: 0
+  UseRaycastsForGround: 0
 --- !u!114 &9159143451590536535
 MonoBehaviour:
   m_ObjectHideFlags: 0
