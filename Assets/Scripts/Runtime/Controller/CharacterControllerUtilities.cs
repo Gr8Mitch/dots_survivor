@@ -66,9 +66,14 @@ namespace Survivor.Runtime.Controller
         /// <summary>
         /// An offset added along the up axis to not actually collide with the ground.
         /// </summary>
-        public const float GROUND_SNAP_OFFSET = 0.01f;
+        public const float GROUND_SNAP_OFFSET = 0.02f;
         
         public static readonly float3 GROUND_UP = new float3(0f, 1f, 0f);
+        
+        /// <summary>
+        /// Offset value representing a desired distance to stay away from any collisions for the character
+        /// </summary>
+        public const float COLLISION_OFFSET = 0.02f;
 
         #endregion Constants
         
@@ -218,22 +223,25 @@ namespace Survivor.Runtime.Controller
             in CharacterComponent characterComponent,
             float deltaTime,
             NativeList<ColliderCastHit> colliderCastHits,
-            in CastColliderData castColliderData)
+            in CastColliderData castColliderData,
+            out bool hasOverlaps)
         {
              // TODO: iterate multiple times to integrate all the collisions more accurately?
+            hasOverlaps = false;
             float3 castStart = localTransform.Position;
-            float3 castEnd = localTransform.Position + characterBodyData.Velocity * deltaTime;
+            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime + COLLISION_OFFSET;
+            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            float3 castEnd = localTransform.Position + movementDirection * remainingDistance;
             
             ColliderCastInput colliderCastInput = new ColliderCastInput(castColliderData.ObstacleCastCollider, castStart, castEnd, localTransform.Rotation);
             colliderCastHits.Clear();
             AllHitsCollector<ColliderCastHit> collector = new AllHitsCollector<ColliderCastHit>(1f, ref colliderCastHits);
             bool hasHitObstacle = physicsWorld.CastCollider(colliderCastInput, ref collector);
             
-            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
-            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
             
             ColliderCastHit closestHit = default;
             closestHit.Fraction = float.MaxValue;
+            float dotRatioOfSelectedHit = float.MaxValue;
             bool isClosestHitGroundedOnSlope = false;
             
             if (hasHitObstacle)
@@ -249,12 +257,17 @@ namespace Survivor.Runtime.Controller
                     
                     bool isGroundedOnSlope = IsGroundedOnSlopeNormal(settings.MaxGroundedSlopeDotProduct,
                         hit.SurfaceNormal, groundUp);
-                    if (hit.Fraction < closestHit.Fraction
-                        || (isGroundedOnSlope || math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < -math.EPSILON))
+                    float dotRatio = math.dot(hit.SurfaceNormal, movementDirection);
+                    if (dotRatio < -math.EPSILON && hit.Fraction <= closestHit.Fraction)
                     {
-                        // This is either a slope or the obstacle opposes the velocity.
-                        closestHit = hit;
-                        isClosestHitGroundedOnSlope = isGroundedOnSlope;
+                        if (hit.Fraction < closestHit.Fraction || dotRatio < dotRatioOfSelectedHit)
+                        {
+                            // This is either a slope or the obstacle opposes the velocity.
+                            closestHit = hit;
+                            dotRatioOfSelectedHit = dotRatio;
+                            isClosestHitGroundedOnSlope = isGroundedOnSlope;
+                            hasOverlaps |= hit.Fraction <= 0f;
+                        }
                     }
                 }
 
@@ -269,7 +282,7 @@ namespace Survivor.Runtime.Controller
                     else
                     {
                         // The obstacle opposes the velocity.
-                        float distanceToHit = remainingDistance * closestHit.Fraction;
+                        float distanceToHit = math.max(0, remainingDistance * closestHit.Fraction);
                         remainingDistance -= distanceToHit;
                         localTransform.Position += movementDirection * distanceToHit;
 
@@ -284,7 +297,10 @@ namespace Survivor.Runtime.Controller
                 }
             }
 
-            localTransform.Position += movementDirection * remainingDistance;
+            if (remainingDistance > 0f)
+            {
+                localTransform.Position += movementDirection * remainingDistance;
+            }
         }
         
         
@@ -348,6 +364,62 @@ namespace Survivor.Runtime.Controller
         }
         
         #endregion Hit Detection
+
+        #region Overlaps
+
+        /// <summary>
+        /// Solves the overlaps between the characters and/or the environment using Distance queries.
+        /// </summary>
+        public static void SolveOverlaps(Entity characterEntity, 
+            ref LocalTransform localTransform, 
+            ref CharacterBodyData characterBodyData, 
+            ref PhysicsWorld physicsWorld, 
+            in CharacterComponent characterComponent, 
+            NativeList<DistanceHit> transientDataDistanceHits, 
+            in CastColliderData castColliderData)
+        {
+            // TODO: for now don't do anything if not ground. Should we change that?
+            if (!characterBodyData.IsGrounded)
+            {
+                return;
+            }
+            
+            ColliderDistanceInput distanceInput = new ColliderDistanceInput(castColliderData.ObstacleCastCollider, 0f, math.RigidTransform(localTransform.Rotation, localTransform.Position), localTransform.Scale);
+            transientDataDistanceHits.Clear();
+            AllHitsCollector<DistanceHit> collector = new AllHitsCollector<DistanceHit>(distanceInput.MaxDistance, ref transientDataDistanceHits);
+            physicsWorld.CalculateDistance(distanceInput, ref collector);
+
+            DistanceHit closestHit = default;
+            closestHit.Fraction = float.MaxValue;
+            
+            for (int i = 0; i < collector.NumHits; ++i)
+            {
+                var hit = collector.AllHits[i];
+                if (hit.Entity == characterEntity)
+                {
+                    continue;
+                }
+
+                if (hit.Distance < closestHit.Distance)
+                {
+                    closestHit = hit;
+                }
+            }
+
+            if (closestHit.Distance != float.MaxValue)
+            {
+                float decollisionDistance = - closestHit.Distance;
+                float3 decollisionDirection = closestHit.SurfaceNormal;
+                float3 decollisionVector = decollisionDirection * decollisionDistance;
+                
+                decollisionDirection = math.normalizesafe(MathUtilities.ProjectOnPlane(decollisionDirection, characterBodyData.GroundHitData.Normal));
+                RecalculateDecollisionVector(ref decollisionVector, closestHit.SurfaceNormal, decollisionDirection, decollisionDistance);
+                
+                localTransform.Position += decollisionVector;
+            }
+        }
+
+        #endregion Overlaps
 
         /// <summary>
         /// Generate a copy of the collider passed in parameter with a different collision filter.
@@ -445,6 +517,16 @@ namespace Survivor.Runtime.Controller
         {
             return math.dot(groundingUp, slopeSurfaceNormal) > maxGroundedSlopeDotProduct;
         }
-
+        
+        private static void RecalculateDecollisionVector(ref float3 decollisionVector, float3 originalHitNormal, float3 newDecollisionDirection, float decollisionDistance)
+        {
+            float overlapDistance = math.max(decollisionDistance, 0f);
+            if (overlapDistance > 0f)
+            {
+                decollisionVector = MathUtilities.ReverseProjectOnVector(originalHitNormal * overlapDistance, 
+                    newDecollisionDirection, 
+                    overlapDistance * MathUtilities.DEFAULT_REVERSE_PROJECTION_MAX_LENGTH_RATIO);
+            }
+        }
     }
 }

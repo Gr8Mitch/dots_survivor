@@ -4,6 +4,11 @@ namespace Survivor.Runtime.Maths
 
     public class MathUtilities
     {
+        /// <summary>
+        /// Default max length multiplier of reverse projection
+        /// </summary>
+        public const float DEFAULT_REVERSE_PROJECTION_MAX_LENGTH_RATIO = 10f;
+        
         // Picked from the DOTS Character controller package.
         
         /// <summary>
@@ -83,6 +88,25 @@ namespace Survivor.Runtime.Maths
         public static float AngleRadiansToDotRatio(float angleRadians)
         {
             return math.cos(angleRadians);
+        }
+
+        /// <summary>
+        /// Calculates a vectorA in the direction of "onNormalizedVector", such that if vectorA was projected on the "projectedVector"'s normalized direction, it would result in "projectedVector"
+        /// </summary>
+        /// <param name="projectedVector"> The projected vector that we want to de-project </param>
+        /// <param name="onNormalizedVector"> The desired normalized direction of the de-projected vector </param>
+        /// <param name="maxLength"> The maximum length of the de-projected vector (de-projection can lead to very large or infinite values for near-perpendicular directions) </param>
+        /// <returns> The resulting de-projected vector </returns>
+        public static float3 ReverseProjectOnVector(float3 projectedVector, float3 onNormalizedVector, float maxLength)
+        {
+            float projectionRatio = math.dot(math.normalizesafe(projectedVector), onNormalizedVector);
+            if (projectionRatio == 0f)
+            {
+                return projectedVector;
+            }
+
+            float deprojectedLength = math.clamp(math.length(projectedVector) / projectionRatio, 0f, maxLength);
+            return onNormalizedVector * deprojectedLength;
         }
     }
 }

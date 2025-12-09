@@ -24,6 +24,9 @@ namespace Survivor.Runtime.Controller
     [BurstCompile]
     public partial struct CharacterControllerFixedUpdateSystem : ISystem, ISystemStartStop
     {
+        /// <summary>
+        /// Contains 
+        /// </summary>
         private struct ControllerTransientData
         {
             [NativeDisableContainerSafetyRestriction]
@@ -31,6 +34,9 @@ namespace Survivor.Runtime.Controller
             
             [NativeDisableContainerSafetyRestriction]
             public NativeList<RaycastHit> RaycastHits;
+            
+            [NativeDisableContainerSafetyRestriction]
+            public NativeList<DistanceHit> DistanceHits;
 
             public void AllocateContainers()
             {
@@ -42,6 +48,11 @@ namespace Survivor.Runtime.Controller
                 if (!RaycastHits.IsCreated)
                 {
                     RaycastHits = new NativeList<RaycastHit>(8, Allocator.Temp);
+                }
+                
+                if (!DistanceHits.IsCreated)
+                {
+                    DistanceHits = new NativeList<DistanceHit>(8, Allocator.Temp);
                 }
             }
         }
@@ -87,6 +98,8 @@ namespace Survivor.Runtime.Controller
                 castCollidersContainer.Dispose();
                 state.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<CastCollidersContainer>());
             }
+            
+            // No need to dispose the transient data as it is allocated with a Temp allocator by the chunks.
         }
         
         [BurstCompile]
@@ -98,7 +111,6 @@ namespace Survivor.Runtime.Controller
             {
                 PhysicsWorld = physicsWorld,
                 CastToEnvironmentCollisionFilter = _castToEnvironmentCollisionFilter,
-                CastToObstacleCollisionFilter = _castToObstacleCollisionFilter,
                 DeltaTime = SystemAPI.Time.DeltaTime,
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
                 TransientData = _transientData,
@@ -155,9 +167,6 @@ namespace Survivor.Runtime.Controller
 
             [ReadOnly] 
             public CollisionFilter CastToEnvironmentCollisionFilter;
-            
-            [ReadOnly]
-            public CollisionFilter CastToObstacleCollisionFilter;
 
             [ReadOnly]
             public float DeltaTime;
@@ -253,7 +262,19 @@ namespace Survivor.Runtime.Controller
                     in characterComponent,
                     DeltaTime,
                     TransientData.ColliderCastHits,
-                    in castColliderData);
+                    in castColliderData,
+                    out bool hasOverlaps);
+
+                if (hasOverlaps)
+                {
+                    CharacterControllerUtilities.SolveOverlaps(characterEntity,
+                        ref localTransform,
+                        ref characterBodyData,
+                        ref PhysicsWorld,
+                        in characterComponent,
+                        TransientData.DistanceHits,
+                        in castColliderData);
+                }
 
                 if (!isInterpolating)
                 {
