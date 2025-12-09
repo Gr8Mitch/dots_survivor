@@ -1,4 +1,4 @@
-namespace Survivor.Runtime.Lifecycle
+namespace Survivor.Runtime.Player
 {
     using Unity.Entities;
     using Survivor.Runtime.Data;

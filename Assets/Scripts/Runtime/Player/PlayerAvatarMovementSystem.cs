@@ -1,3 +1,5 @@
+using Unity.Collections;
+
 namespace Survivor.Runtime.Player
 {
     using Unity.Mathematics;
@@ -30,15 +32,18 @@ namespace Survivor.Runtime.Player
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            new ComputeMovementFromInputsJob()
+            var job = new ComputeMovementFromInputsJob()
             {
                 PlayerInputs = SystemAPI.GetSingleton<PlayerInputs>()
-            }.Schedule(_playerCharacterControllerQuery);
+            };
+            job.Schedule(_playerCharacterControllerQuery);
+            //job.Run();
         }
 
         [BurstCompile]
         private partial struct ComputeMovementFromInputsJob : IJobEntity
         {
+            [ReadOnly]
             public PlayerInputs PlayerInputs;
             
             public void Execute(ref CharacterController characterController)

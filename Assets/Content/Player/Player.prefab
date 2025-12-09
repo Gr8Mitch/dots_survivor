@@ -191,7 +191,6 @@ GameObject:
   - component: {fileID: 6596645873158006319}
   - component: {fileID: -4537746716070167514}
   - component: {fileID: 9159143451590536535}
-  - component: {fileID: 2358743733546191122}
   - component: {fileID: -4953615278582932268}
   m_Layer: 6
   m_Name: Player
@@ -272,6 +271,7 @@ MonoBehaviour:
   UseGroundInterpolation: 0
   GroundInterpolationDuration: 0.05
   UseRaycastsForGround: 0
+  InterpolatePosition: 1
 --- !u!114 &9159143451590536535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284,33 +284,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ef576d6cf26fda42bf7612a94a27939, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survivor.Runtime.Pawn.AvatarPawnComponentAuthoring
---- !u!54 &2358743733546191122
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2609908709428146078}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!114 &-4953615278582932268
 MonoBehaviour:
   m_ObjectHideFlags: 0

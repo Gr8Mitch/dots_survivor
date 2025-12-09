@@ -1,4 +1,4 @@
-namespace Survivor.Runtime.Lifecycle
+namespace Survivor.Runtime.Enemy
 {
     using Unity.Transforms;
     using Unity.Burst;
@@ -7,6 +7,7 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Mathematics;
     using Survivor.Runtime.Data;
     using Survivor.Runtime.Character;
+    using Survivor.Runtime.Player;
     using UnityEngine;
 
     /// <summary>

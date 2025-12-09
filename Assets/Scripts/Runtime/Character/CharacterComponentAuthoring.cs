@@ -81,6 +81,9 @@ namespace Survivor.Runtime.Character
         
         [FormerlySerializedAs("UseRaycasts")] [Tooltip("True to use raycasts instead of collider casts for the ground computation.")]
         public bool UseRaycastsForGround = false;
+
+        [Tooltip("True if we should inteporlate the position computed during the fixed update.")]
+        public bool InterpolatePosition = true;
         
         class Baker : Baker<CharacterComponentAuthoring>
         {
@@ -119,6 +122,11 @@ namespace Survivor.Runtime.Character
                 {
                     LastGroundCastTime = float.MinValue
                 });
+
+                if (authoring.InterpolatePosition)
+                {
+                    AddComponent(entity, new CharacterInterpolationData());
+                }
             }
         }
     }

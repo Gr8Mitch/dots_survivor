@@ -61,6 +61,23 @@ namespace Survivor.Runtime.Physics
             };
         }
         
+        public static CollisionFilter BuildFilterForRaycast(params int[] collidesWithLayer)
+        {
+            var collisionFilter = new CollisionFilter
+            {
+                BelongsTo = ~0u,
+                CollidesWith = 0,
+                GroupIndex = 0
+            };
+            
+            foreach (var layer in collidesWithLayer)
+            {
+                collisionFilter.CollidesWith |= LayerToMask(layer);
+            }
+            
+            return collisionFilter;
+        }
+        
         #endregion Layers
     }
 }

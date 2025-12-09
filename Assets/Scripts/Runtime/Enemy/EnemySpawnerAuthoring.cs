@@ -1,4 +1,4 @@
-namespace Survivor.Runtime.Lifecycle
+namespace Survivor.Runtime.Enemy
 {
     using Unity.Mathematics;
     using Unity.Entities;

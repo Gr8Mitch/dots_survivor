@@ -7,7 +7,54 @@ namespace Survivor.Runtime.Controller
     using Unity.Physics;
     using Unity.Transforms;
     using CapsuleCollider = Unity.Physics.CapsuleCollider;
-    using Collider = Unity.Physics.Collider;
+    using Unity.Entities;
+    
+    public struct CastColliderData
+    {
+        public BlobAssetReference<Collider> GroundCastCollider;
+        public BlobAssetReference<Collider> ObstacleCastCollider;
+
+        public void Dispose()
+        {
+            GroundCastCollider.Dispose();
+            ObstacleCastCollider.Dispose();
+        }
+    }
+    
+    /// <summary>
+    /// Contains all the colliders used for the ColliderCasts (with the relevant CollisionFilter)
+    /// </summary>
+    public struct CastCollidersContainer : IComponentData
+    {
+        public CastColliderData PlayerCastColliderData;
+        public NativeHashMap<int, CastColliderData> EnemiesCastColliderData;
+
+        public void AllocateData(int enemiesCount, Allocator allocator)
+        {
+            EnemiesCastColliderData = new NativeHashMap<int, CastColliderData>(enemiesCount, allocator);
+        }
+
+        public void Dispose()
+        {
+            PlayerCastColliderData.Dispose();
+
+            foreach (var entry in EnemiesCastColliderData)
+            {
+                entry.Value.Dispose();
+            }
+            EnemiesCastColliderData.Dispose();
+        }
+
+        public CastColliderData GetColliderData(int? enemyTypeId)
+        {
+            if (enemyTypeId == null)
+            {
+                return PlayerCastColliderData;
+            }
+
+            return EnemiesCastColliderData[enemyTypeId.Value];
+        }
+    }
     
     /// <summary>
     /// Contains some utility methods for the character controller.
@@ -24,7 +71,6 @@ namespace Survivor.Runtime.Controller
         public static readonly float3 GROUND_UP = new float3(0f, 1f, 0f);
 
         #endregion Constants
-
         
         #region Ground Detection
         /// <summary>
@@ -40,10 +86,9 @@ namespace Survivor.Runtime.Controller
         public static unsafe void ComputeGround(ref LocalTransform localTransform, 
             ref CharacterBodyData characterBodyData,
             ref PhysicsWorld physicsWorld,
-            in PhysicsCollider characterPhysicsCollider,
             in CharacterComponent characterComponent,
-            CollisionFilter castToEnvironmentCollisionFilter,
-            NativeList<ColliderCastHit> colliderCastHits)
+            NativeList<ColliderCastHit> colliderCastHits,
+            in CastColliderData castColliderData)
         {
             quaternion characterRotation = localTransform.Rotation;
             ref float3 characterPosition = ref localTransform.Position;
@@ -56,15 +101,11 @@ namespace Survivor.Runtime.Controller
             float3 castStart = characterPosition;
             float3 castEnd = characterPosition + castLength * castDirection;
 
-            if (!GenerateColliderCastInput(in characterPhysicsCollider,in castStart,in castEnd,
-                    in castToEnvironmentCollisionFilter,in characterRotation, out ColliderCastInput colliderCastInput))
-            {
-                return;
-            }
-            
+            ColliderCastInput colliderCastInput = new ColliderCastInput(castColliderData.GroundCastCollider, castStart, castEnd, characterRotation);
             colliderCastHits.Clear();
             AllHitsCollector<ColliderCastHit> collector = new AllHitsCollector<ColliderCastHit>(1f, ref colliderCastHits);
-            var hasCollided = physicsWorld.CastCollider(colliderCastInput, ref collector);
+            bool hasCollided = false;
+            physicsWorld.CastCollider(colliderCastInput, ref collector);
             ColliderCastHit closestHit = default;
             closestHit.Fraction = float.MaxValue;
             
@@ -100,7 +141,7 @@ namespace Survivor.Runtime.Controller
             ref PhysicsWorld physicsWorld,
             in PhysicsCollider characterPhysicsCollider,
             in CharacterComponent characterComponent,
-            CollisionFilter castToEnvironmentCollisionFilter,
+            in CollisionFilter castToEnvironmentCollisionFilter,
             NativeList<RaycastHit> raycastHits)
         {
             ref float3 characterPosition = ref localTransform.Position;
@@ -170,48 +211,76 @@ namespace Survivor.Runtime.Controller
         #endregion Ground Detection
 
         #region Hit Detection
-        public static unsafe void ComputeHitsMovement(ref LocalTransform localTransform, 
+        public static unsafe void ComputeHitsMovement(Entity colliderEntity,
+            ref LocalTransform localTransform, 
             ref CharacterBodyData characterBodyData,
             ref PhysicsWorld physicsWorld,
-            in PhysicsCollider characterPhysicsCollider,
             in CharacterComponent characterComponent,
-            CollisionFilter castToEnvironmentCollisionFilter,
-            float deltaTime)
+            float deltaTime,
+            NativeList<ColliderCastHit> colliderCastHits,
+            in CastColliderData castColliderData)
         {
              // TODO: iterate multiple times to integrate all the collisions more accurately?
             float3 castStart = localTransform.Position;
             float3 castEnd = localTransform.Position + characterBodyData.Velocity * deltaTime;
             
-            if (!GenerateColliderCastInput(in characterPhysicsCollider,in castStart,in castEnd,
-                    in castToEnvironmentCollisionFilter,in localTransform.Rotation, out ColliderCastInput castInput))
-            {
-                return;
-            }
-            
-            bool hasHitObstacle = physicsWorld.CastCollider(castInput, out ColliderCastHit hit);
+            ColliderCastInput colliderCastInput = new ColliderCastInput(castColliderData.ObstacleCastCollider, castStart, castEnd, localTransform.Rotation);
+            colliderCastHits.Clear();
+            AllHitsCollector<ColliderCastHit> collector = new AllHitsCollector<ColliderCastHit>(1f, ref colliderCastHits);
+            bool hasHitObstacle = physicsWorld.CastCollider(colliderCastInput, ref collector);
             
             float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
             float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            
+            ColliderCastHit closestHit = default;
+            closestHit.Fraction = float.MaxValue;
+            bool isClosestHitGroundedOnSlope = false;
+            
             if (hasHitObstacle)
             {
                 float3 groundUp = CharacterControllerUtilities.GROUND_UP;
                 ref CharacterSettings settings = ref characterComponent.Settings.Value;
-                bool isGroundedOnSlope = IsGroundedOnSlopeNormal(settings.MaxGroundedSlopeDotProduct, hit.SurfaceNormal, groundUp);
-                if (isGroundedOnSlope)
+                foreach (var hit in collector.AllHits)
                 {
-                    characterBodyData.Velocity = MathUtilities.ReorientVectorOnPlaneAlongDirection(characterBodyData.Velocity, hit.SurfaceNormal, groundUp);
+                    if (colliderEntity == hit.Entity)
+                    {
+                        continue;
+                    }
+                    
+                    bool isGroundedOnSlope = IsGroundedOnSlopeNormal(settings.MaxGroundedSlopeDotProduct,
+                        hit.SurfaceNormal, groundUp);
+                    if (hit.Fraction < closestHit.Fraction
+                        || (isGroundedOnSlope || math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < -math.EPSILON))
+                    {
+                        // This is either a slope or the obstacle opposes the velocity.
+                        closestHit = hit;
+                        isClosestHitGroundedOnSlope = isGroundedOnSlope;
+                    }
                 }
-                else if (math.dot(hit.SurfaceNormal, characterBodyData.Velocity) < math.EPSILON)
-                {
-                    float distanceToHit = remainingDistance * hit.Fraction;
-                    remainingDistance -= distanceToHit;
-                    localTransform.Position += movementDirection * distanceToHit;
 
-                    // Project the velocity on the hits
-                    float3 groundedCreaseDirection =
-                        math.normalizesafe(math.cross(characterBodyData.GroundHitData.Normal, hit.SurfaceNormal));
-                    characterBodyData.Velocity = math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
-                    movementDirection = math.normalizesafe(characterBodyData.Velocity);
+                if (closestHit.Fraction < float.MaxValue)
+                {
+                    if (isClosestHitGroundedOnSlope)
+                    {
+                        characterBodyData.Velocity =
+                            MathUtilities.ReorientVectorOnPlaneAlongDirection(characterBodyData.Velocity,
+                                closestHit.SurfaceNormal, groundUp);
+                    }
+                    else
+                    {
+                        // The obstacle opposes the velocity.
+                        float distanceToHit = remainingDistance * closestHit.Fraction;
+                        remainingDistance -= distanceToHit;
+                        localTransform.Position += movementDirection * distanceToHit;
+
+                        // Project the velocity on the hits
+                        float3 groundedCreaseDirection =
+                            math.normalizesafe(
+                                math.cross(characterBodyData.GroundHitData.Normal, closestHit.SurfaceNormal));
+                        characterBodyData.Velocity =
+                            math.projectsafe(characterBodyData.Velocity, groundedCreaseDirection);
+                        movementDirection = math.normalizesafe(characterBodyData.Velocity);
+                    }
                 }
             }
 
@@ -279,30 +348,27 @@ namespace Survivor.Runtime.Controller
         }
         
         #endregion Hit Detection
-        
-        private static unsafe bool GenerateColliderCastInput(in PhysicsCollider collider, 
-            in float3 castStart, in float3 castEnd, in CollisionFilter collisionFilter, in quaternion colliderRotation,
-            out ColliderCastInput colliderCastInput)
+
+        /// <summary>
+        /// Generate a copy of the collider passed in parameter with a different collision filter.
+        /// </summary>
+        /// <returns> False if the collider type is not handled, true otherwise. </returns>
+        public static unsafe bool GenerateCastCollider(in PhysicsCollider collider, in CollisionFilter collisionFilter, out BlobAssetReference<Collider> castCollider)
         {
-            // Make a copy of the collider to change its collision filter while keeping its form.
             if (collider.Value.Value.Type == ColliderType.Capsule)
             {
                 CapsuleCollider* originalCollider = (CapsuleCollider*)collider.Value.GetUnsafePtr();
-                CapsuleCollider castCollider = new CapsuleCollider();
-                castCollider.Initialize(originalCollider->Geometry, collisionFilter, originalCollider->Material);
-                colliderCastInput = new ColliderCastInput(collider.Value, castStart, castEnd, colliderRotation);
+                castCollider = CapsuleCollider.Create(originalCollider->Geometry, collisionFilter);
             }
             else if (collider.Value.Value.Type == ColliderType.Sphere)
             {
                 SphereCollider* originalCollider = (SphereCollider*)collider.Value.GetUnsafePtr();
-                SphereCollider castCollider = new SphereCollider();
-                castCollider.Initialize(originalCollider->Geometry, collisionFilter, originalCollider->Material);
-                colliderCastInput = new ColliderCastInput(collider.Value, castStart, castEnd, colliderRotation);
+                castCollider = SphereCollider.Create(originalCollider->Geometry, collisionFilter);
             }
             else
             {
                 UnityEngine.Debug.LogError("The character collider is not a capsule collider nor a sphere colliders, characters should have only one collider for now (no compound colliders).");
-                colliderCastInput = default;
+                castCollider = default;
                 return false;
             }
 

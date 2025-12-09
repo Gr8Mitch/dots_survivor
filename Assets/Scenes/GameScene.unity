@@ -413,6 +413,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameManager
       objectReference: {fileID: 0}
+    - target: {fileID: 7079171910291762161, guid: 3074bfadc61ceb846886f0ee8a1b7c93, type: 3}
+      propertyPath: _fixedDeltaTime
+      value: 0.016666668
+      objectReference: {fileID: 0}
     - target: {fileID: 8713173116385958125, guid: 3074bfadc61ceb846886f0ee8a1b7c93, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
