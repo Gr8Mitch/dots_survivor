@@ -229,9 +229,9 @@ namespace Survivor.Runtime.Controller
              // TODO: iterate multiple times to integrate all the collisions more accurately?
             hasOverlaps = false;
             float3 castStart = localTransform.Position;
-            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime + COLLISION_OFFSET;
+            float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
             float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
-            float3 castEnd = localTransform.Position + movementDirection * remainingDistance;
+            float3 castEnd = localTransform.Position + movementDirection * (remainingDistance + COLLISION_OFFSET);
             
             ColliderCastInput colliderCastInput = new ColliderCastInput(castColliderData.ObstacleCastCollider, castStart, castEnd, localTransform.Rotation);
             colliderCastHits.Clear();

@@ -296,5 +296,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9077829899c794e4bade266c848a1d6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Camera.CameraTargetAuthoring
-  OffsetToTarget: {x: 0, y: 13, z: -17}
-  EulerRotation: {x: 35, y: 0, z: 0}
+  OffsetToTarget: {x: 0, y: 18, z: -19}
+  EulerRotation: {x: 45, y: 0, z: 0}
