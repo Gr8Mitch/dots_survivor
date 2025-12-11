@@ -39,7 +39,7 @@ namespace Survivor.Runtime.Player.Inputs
             {
                 return;
             }
-
+            
             float2 movement = _moveAction.ReadValue<Vector2>();
             
             // PlayerInputs is a singleton as we only have one player.

@@ -206,7 +206,7 @@ namespace Survivor.Runtime.Controller
                 ref CharacterSettings settings = ref characterComponent.Settings.Value;
                 bool isInterpolating = settings.UseGroundInterpolation 
                                        && (ElapsedTime - characterBodyData.LastGroundCastTime) < settings.GroundInterpolationDuration;
-
+        
                 bool isEnemy =
                     EnemyCharacterComponentLookup.TryGetComponent(characterEntity, out var enemyCharacterComponent);
                 var castColliderData = CastCollidersContainer.GetColliderData(isEnemy ? enemyCharacterComponent.EnemyTypeId : null);

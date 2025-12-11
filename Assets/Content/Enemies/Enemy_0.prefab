@@ -191,6 +191,8 @@ GameObject:
   - component: {fileID: 6596645873158006319}
   - component: {fileID: -4537746716070167514}
   - component: {fileID: 5421477800021948669}
+  - component: {fileID: 3992224204660270717}
+  - component: {fileID: -3875603342612500789}
   m_Layer: 9
   m_Name: Enemy_0
   m_TagString: Untagged
@@ -282,3 +284,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Character.EnemyCharacterComponentAuthoring
   EnemyTypeId: 0
+--- !u!114 &3992224204660270717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2609908709428146078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deefdb8a38a5f174081f28f07cff7e5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Lifecycle.HealthComponentAuthoring
+  HitBoxRadius: 1
+  InitialHitPoints: 1
+--- !u!114 &-3875603342612500789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2609908709428146078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be1d22742729e9747a116935d2d4ee0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Lifecycle.DamageDealerAuthoring
+  Damages: 1
+  DamagePlayer: 1
+  DamagesType: 2
+  SphereZoneRadius: 1
+  CooldownDuration: 0.5

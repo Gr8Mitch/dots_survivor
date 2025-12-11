@@ -18,7 +18,7 @@ namespace Survivor.Runtime.Enemy
     [BurstCompile]
     partial struct EnemySpawnSystem : ISystem
     {
-        private const int MAX_ENEMIES = 300;
+        public const int MAX_ENEMIES = 300;
         
         private EntityQuery _spawnerEntityQuery;
         private EntityQuery _enemiesQuery;
