@@ -193,6 +193,7 @@ GameObject:
   - component: {fileID: 9159143451590536535}
   - component: {fileID: -4953615278582932268}
   - component: {fileID: 4139865922539219987}
+  - component: {fileID: -7837414631649846731}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -311,4 +312,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: deefdb8a38a5f174081f28f07cff7e5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Lifecycle.HealthComponentAuthoring
+  HitBoxRadius: 1
   InitialHitPoints: 50
+--- !u!114 &-7837414631649846731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2609908709428146078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8befb2acd1d58e147bb56fbab77251bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.OwnedAbilitiesAuthoring
+  AbilitiesIds: 0000

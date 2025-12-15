@@ -52,6 +52,7 @@ namespace Survivor.Runtime.Lifecycle
         }
         
         private NativeList<DamageReceiverData> _enemyDamageReceivers;
+        private NativeReference<DamageReceiverData> _playerDamageReceiver;
         private EntityQuery _damageReceiversQuery;
         private EntityQuery _damageDealerQuery;
         
@@ -65,6 +66,7 @@ namespace Survivor.Runtime.Lifecycle
                 new DamagesContainer(DAMAGES_CONTAINER_INITIAL_CAPACITY, Allocator.Persistent));
             _enemyDamageReceivers =
                 new NativeList<DamageReceiverData>(math.ceilpow2(EnemySpawnSystem.MAX_ENEMIES), Allocator.Persistent);
+            _playerDamageReceiver = new NativeReference<DamageReceiverData>(Allocator.Persistent);
             
             state.RequireForUpdate<DamagesContainer>();
             state.RequireForUpdate<AvatarCharacterComponent>();
@@ -75,6 +77,7 @@ namespace Survivor.Runtime.Lifecycle
         [BurstCompile]
         public void OnDestroy(ref SystemState state)
         {
+            _playerDamageReceiver.Dispose();
             _enemyDamageReceivers.Dispose();
             
             if (SystemAPI.TryGetSingleton<DamagesContainer>(out var container))
@@ -96,17 +99,23 @@ namespace Survivor.Runtime.Lifecycle
             _enemyDamageReceivers.Clear();
 
             state.EntityManager.CompleteDependencyBeforeRW<DamagesContainer>();
-            var damagesPerEntity = SystemAPI.GetSingletonRW<DamagesContainer>();
-            damagesPerEntity.ValueRW.DamagesPerEntity.Clear();
-            
-            var playerSingletonEntity = SystemAPI.GetSingletonEntity<AvatarCharacterComponent>();
-            var playerData = new DamageReceiverData(SystemAPI.GetComponent<LocalTransform>(playerSingletonEntity).Position,
-                SystemAPI.GetComponent<HealthComponent>(playerSingletonEntity).HitBoxRadius, playerSingletonEntity);
-                
+            var damagesContainer = SystemAPI.GetSingletonRW<DamagesContainer>();
+            ref var damagesPerEntity = ref damagesContainer.ValueRW.DamagesPerEntity;
+            damagesPerEntity.Clear();
+            if (damagesPerEntity.Capacity < _damageReceiversQuery.CalculateEntityCount() + 1)
+            {
+                damagesPerEntity.Capacity = math.ceilpow2(_damageDealerQuery.CalculateEntityCount() + 1);
+            }
+
             new FetchEnemyDamageReceiverDataJob()
             {
                 DamageReceivers = _enemyDamageReceivers.AsParallelWriter()
             }.ScheduleParallel();
+
+            new FetchPlayerDamageReceiverDataJob()
+            {
+                PlayerData = _playerDamageReceiver
+            }.Schedule();
             
             var job = new ComputeDamagesJob()
             {
@@ -117,8 +126,8 @@ namespace Survivor.Runtime.Lifecycle
                 DamageCooldownTypeHandle = SystemAPI.GetComponentTypeHandle<DamageCooldown>(false),
                 EnemyDamageReceivers = _enemyDamageReceivers,
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
-                DamagesPerEntity = damagesPerEntity.ValueRW.DamagesPerEntity.AsParallelWriter(),
-                PlayerData = playerData
+                DamagesPerEntity = damagesPerEntity.AsParallelWriter(),
+                PlayerData = _playerDamageReceiver
             };
             state.Dependency = job.ScheduleParallel(_damageDealerQuery, state.Dependency);
         }
@@ -132,6 +141,18 @@ namespace Survivor.Runtime.Lifecycle
             private void Execute(Entity entity, in HealthComponent healthComponent, in LocalTransform localTransform)
             {
                 DamageReceivers.AddNoResize(new DamageReceiverData(localTransform.Position, healthComponent.HitBoxRadius, entity));
+            }
+        }
+        
+        [BurstCompile]
+        [WithAll(typeof(AvatarCharacterComponent))]
+        private partial struct FetchPlayerDamageReceiverDataJob : IJobEntity
+        {
+            public NativeReference<DamageReceiverData> PlayerData;
+            
+            private void Execute(Entity entity, in HealthComponent healthComponent, in LocalTransform localTransform)
+            {
+                PlayerData.Value = new DamageReceiverData(localTransform.Position, healthComponent.HitBoxRadius, entity);
             }
         }
 
@@ -158,13 +179,13 @@ namespace Survivor.Runtime.Lifecycle
             [ReadOnly]
             public NativeList<DamageReceiverData> EnemyDamageReceivers;
             
-            [ReadOnly]
-            public DamageReceiverData PlayerData;
-            
             public NativeParallelMultiHashMap<Entity, ushort>.ParallelWriter DamagesPerEntity;
             
             [ReadOnly]
             public double ElapsedTime;
+
+            [ReadOnly]
+            public NativeReference<DamageReceiverData> PlayerData;
             
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -225,11 +246,12 @@ namespace Survivor.Runtime.Lifecycle
                         float zoneRadius = isDamageSphereZone ? damageSphereZones[i].Radius : 0f;
                         float3 damagePosition = localToWorlds[i].Position;
                         
-                        if (CanHit(in damagePosition, in PlayerData.Position,
-                                PlayerData.HitBoxRadius, zoneRadius))
+                        var playerData = PlayerData.Value;
+                        if (CanHit(in damagePosition, in playerData.Position,
+                                playerData.HitBoxRadius, zoneRadius))
                         {
                             ushort damages = damageDealers[i].Damages;
-                            DamagesPerEntity.Add(PlayerData.Entity, damages);
+                            DamagesPerEntity.Add(playerData.Entity, damages);
                         }
                     }
                 }

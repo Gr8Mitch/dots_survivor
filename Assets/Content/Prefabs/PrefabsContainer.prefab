@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 697795840313714631}
   - component: {fileID: 2075747067116971121}
+  - component: {fileID: 629448463723534459}
   m_Layer: 0
   m_Name: PrefabsContainer
   m_TagString: Untagged
@@ -47,3 +48,16 @@ MonoBehaviour:
   PlayerAvatarPrefab: {fileID: 2609908709428146078, guid: e9dca6749a8506645a6feed73a484ba9, type: 3}
   EnemiesPrefabs:
   - {fileID: 2609908709428146078, guid: fc504165b6a0d9d429a90d9f426bb1a6, type: 3}
+--- !u!114 &629448463723534459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2928165390750123523}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b0f4a3cf428e42439f411efca2ba6ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.AbilitiesContainerAuthoring
+  AbilitiesSettings: []
