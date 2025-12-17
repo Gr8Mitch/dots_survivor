@@ -14,11 +14,17 @@ namespace Survivor.Runtime.Lifecycle
     /// </summary>
     public struct DamagesContainer : IComponentData
     {
-        public NativeParallelMultiHashMap<Entity, ushort> DamagesPerEntity;
+        public struct DamageData
+        {
+            public float3 Position;
+            public ushort Damages;
+        }
+        
+        public NativeParallelMultiHashMap<Entity, DamageData> DamagesPerEntity;
 
         public DamagesContainer(int capacity, Allocator allocator)
         {
-            DamagesPerEntity = new NativeParallelMultiHashMap<Entity, ushort>(capacity, allocator);
+            DamagesPerEntity = new NativeParallelMultiHashMap<Entity, DamageData>(capacity, allocator);
         }
 
         public void Dispose()
@@ -179,7 +185,7 @@ namespace Survivor.Runtime.Lifecycle
             [ReadOnly]
             public NativeList<DamageReceiverData> EnemyDamageReceivers;
             
-            public NativeParallelMultiHashMap<Entity, ushort>.ParallelWriter DamagesPerEntity;
+            public NativeParallelMultiHashMap<Entity, DamagesContainer.DamageData>.ParallelWriter DamagesPerEntity;
             
             [ReadOnly]
             public double ElapsedTime;
@@ -229,7 +235,11 @@ namespace Survivor.Runtime.Lifecycle
                             if (CanHit(in damagePosition, in enemyDamageReceiver.Position,
                                     enemyDamageReceiver.HitBoxRadius, zoneRadius))
                             {
-                                DamagesPerEntity.Add(enemyDamageReceiver.Entity, damages);
+                                DamagesPerEntity.Add(enemyDamageReceiver.Entity, new DamagesContainer.DamageData()
+                                {
+                                    Damages = damages,
+                                    Position = enemyDamageReceiver.Position
+                                });
                             }
                         }
                     }
@@ -251,7 +261,11 @@ namespace Survivor.Runtime.Lifecycle
                                 playerData.HitBoxRadius, zoneRadius))
                         {
                             ushort damages = damageDealers[i].Damages;
-                            DamagesPerEntity.Add(playerData.Entity, damages);
+                            DamagesPerEntity.Add(playerData.Entity, new DamagesContainer.DamageData()
+                            {
+                                Damages = damages,
+                                Position = damagePosition
+                            });
                         }
                     }
                 }

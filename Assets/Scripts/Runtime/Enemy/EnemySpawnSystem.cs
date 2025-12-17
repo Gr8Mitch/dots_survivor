@@ -110,7 +110,6 @@ namespace Survivor.Runtime.Enemy
                         float3 forward = math.mul(spawnRotation, new float3(0,0,1));
                         forward.y = 0;
                         forward = math.normalizesafe(forward);
-
                         spawnRotation = quaternion.LookRotationSafe(forward, math.up());
                         
                         EcbParallel.SetComponent(chunkIndex, enemyInstanceEntity, new LocalTransform()

@@ -60,4 +60,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0f4a3cf428e42439f411efca2ba6ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.AbilitiesContainerAuthoring
-  AbilitiesSettings: []
+  AbilitiesSettings:
+  - {fileID: 11400000, guid: 5920e08dc04c7854e84e4855a8da6fcd, type: 2}

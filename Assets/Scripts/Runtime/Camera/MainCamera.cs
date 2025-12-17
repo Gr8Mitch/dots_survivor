@@ -9,6 +9,14 @@ namespace Survivor.Runtime.Camera
     public class MainCamera : MonoBehaviour
     {
         public static Camera Instance { get; private set; }
+        
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetSingleton()
+        {
+            Instance = null;
+        }
+#endif //UNITY_EDITOR
 
         private void Awake()
         {

@@ -36,17 +36,17 @@ namespace Survivor.Runtime.Lifecycle
         private partial struct UpdateHealthJob : IJobEntity
         {
             [ReadOnly] 
-            public NativeParallelMultiHashMap<Entity, ushort> DamagesPerEntity;
+            public NativeParallelMultiHashMap<Entity, DamagesContainer.DamageData> DamagesPerEntity;
 
             private void Execute(Entity entity, ref HealthComponent healthComponent)
             {
-                if (DamagesPerEntity.TryGetFirstValue(entity, out ushort damages, out var iterator))
+                if (DamagesPerEntity.TryGetFirstValue(entity, out DamagesContainer.DamageData damagesData, out var iterator))
                 {
                     // TODO: handle vfx when taking damage (numbers + blinking ?)
-                    healthComponent.HitPoints = (ushort)math.max(0, healthComponent.HitPoints - damages);
-                    while (DamagesPerEntity.TryGetNextValue(out damages, ref iterator))
+                    healthComponent.HitPoints = (ushort)math.max(0, healthComponent.HitPoints - damagesData.Damages);
+                    while (DamagesPerEntity.TryGetNextValue(out damagesData, ref iterator))
                     {
-                        healthComponent.HitPoints = (ushort)math.max(0, healthComponent.HitPoints - damages);
+                        healthComponent.HitPoints = (ushort)math.max(0, healthComponent.HitPoints - damagesData.Damages);
                     }
 
                     if (healthComponent.HitPoints == 0)

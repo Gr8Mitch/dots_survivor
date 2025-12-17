@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7634426739882094032, guid: 03418b43143d7804494d856d5a0f1d81, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.90191
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7634426739882094032, guid: 03418b43143d7804494d856d5a0f1d81, type: 3}
       propertyPath: m_LocalPosition.y
@@ -141,7 +141,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7634426739882094032, guid: 03418b43143d7804494d856d5a0f1d81, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.90191
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7634426739882094032, guid: 03418b43143d7804494d856d5a0f1d81, type: 3}
       propertyPath: m_LocalRotation.w
@@ -184,14 +184,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 629448463723534459, guid: 3929a83a6dd59cd4aa3a28ea6ac00d8a, type: 3}
-      propertyPath: AbilitiesSettings.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 629448463723534459, guid: 3929a83a6dd59cd4aa3a28ea6ac00d8a, type: 3}
-      propertyPath: 'AbilitiesSettings.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 5920e08dc04c7854e84e4855a8da6fcd, type: 2}
     - target: {fileID: 697795840313714631, guid: 3929a83a6dd59cd4aa3a28ea6ac00d8a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
