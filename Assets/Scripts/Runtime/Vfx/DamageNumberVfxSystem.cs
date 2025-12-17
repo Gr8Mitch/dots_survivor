@@ -1,211 +1,103 @@
-using Unity.Burst.Intrinsics;
-
 namespace Survivor.Runtime.Vfx
 {
     using Unity.Entities;
     using Survivor.Runtime.Lifecycle;
     using Unity.Rendering;
-    using UnityEngine;
     using Survivor.Runtime.Camera;
     using Unity.Burst;
     using Unity.Collections;
     using Unity.Jobs;
     using Unity.Mathematics;
     using Unity.Transforms;
-    using UnityEngine.Rendering;
+    using Unity.Burst.Intrinsics;
 
     public struct DamageNumberVfx : IComponentData
     {
         public double CreationElaspedTime;
     }
     
+    // TODO: It would probably be better to do most of the logic in the shaders. But it is probably good enough for now, 
+    // as the current performances of all of this are quite good.
+    // TODO: add color and change alpha over time ?
+    // TODO: move it to the initialization group to prevent a sync point in EndSimulationEntityCommandBufferSystem ?
+    
     /// <summary>
-    /// Handles the "vfx" displayig the numbers showing the damamges.
+    /// Handles the "vfx" displaying the numbers showing the damages.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(HealthSystem))]
-    public partial class DamageNumberVfxSystem : SystemBase
+    [BurstCompile]
+    public partial struct DamageNumberVfxSystem : ISystem, ISystemStartStop
     {
         private EntityQuery _damageNumberVfxQuery;
+        private Entity _numbersVfxPrefab;
         
-        protected override void OnCreate()
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
         {
-            base.OnCreate();
-
-            //CreateNumberEntityPrefab();
-            
-            RequireForUpdate<DamagesContainer>();
-            RequireForUpdate<VfxPrefabsContainer>();
-            RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+            state.RequireForUpdate<DamagesContainer>();
+            state.RequireForUpdate<VfxPrefabsContainer>();
+            state.RequireForUpdate<CameraEntity>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
             _damageNumberVfxQuery = SystemAPI.QueryBuilder().WithAll<DamageNumberVfx>().Build();
+        }
+        
+        public void OnStartRunning(ref SystemState state)
+        {
+            // Retrieve the number vfx prefab entity.
             
-            // Create a hierarchy of entities with the root being the container of the X digits, and the children being the individual digits.
-            // All the digits share the same RenderMeshArray but not the MaterialMeshInfo
+            // !!!! To make things work, we have to use a specific subscene, otherwise the
+            // RenderMeshArray contains all the meshes and materials referenced by the subscene !!!!!
+            // Because the prefab has multiple materials, it creates a LinkedEntityGroup with 11 entities (including a root).
+            // The one with the index 1 is the 0 digit.
+            var prefab = SystemAPI.GetSingleton<VfxPrefabsContainer>().NumbersVfxDigitPrefab;
+            var linkedEntityGroup = state.EntityManager.GetBuffer<LinkedEntityGroup>(prefab);
+            _numbersVfxPrefab = linkedEntityGroup[1].Value;
         }
 
-        // protected override void OnStartRunning()
-        // {
-        //     base.OnStartRunning();
-        //     
-        //     // Modifies the RenderMeshArray of the digit prefab to include all the materials.
-        //     // If it is done the baked prefab, it generates 10 sub entities.
-        //     var numbersVfxDigitPrefab = SystemAPI.GetSingletonRW<VfxPrefabsContainer>().ValueRW.NumbersVfxDigitPrefab;
-        //     var renderMeshArray = EntityManager.GetSharedComponentManaged<RenderMeshArray>(numbersVfxDigitPrefab);
-        //     var mesh = renderMeshArray.MeshReferences[0];
-        //     var material = renderMeshArray.MaterialReferences[0];
-        //     EntityManager.SetSharedComponentManaged(numbersVfxDigitPrefab, CreateNumbersRenderMeshArray(mesh, material));
-        // }
-
-        protected override void OnUpdate()
+        public void OnStopRunning(ref SystemState state) { }
+        
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
         {
-            Dependency.Complete();
             var damageContainers = SystemAPI.GetSingleton<DamagesContainer>();
-            if (!damageContainers.DamagesPerEntity.IsEmpty)
+            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged);
+
+            // We schedule the job even if there is no damages to display, as it is probably cheaper than creating
+            // a sync point to check that the damages container is not empty.
+            var instantiateNumbersVfxJob = new InstantiateNumbersVfxJob()
             {
-                // Create new VFX entities here.
-                var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
-                    .CreateCommandBuffer(World.Unmanaged);
-                
-                // !!!! To make things work, we have to use a specific subscene, otherwise the
-                // RenderMeshArray contains all the meshes and materials referenced by the subscene !!!!!
-                // TODO: check if adding a section is enough on the global baking scene is enough to make it work.
-                var prefab = SystemAPI.GetSingleton<VfxPrefabsContainer>().NumbersVfxDigitPrefab;
-                // Because the prefab has multiple materials, it creates a LinkedEntityGroup with 11 entities (including a root).
-                // The one with the index 1 is the 0 digit.
-                var linkedEntityGroup = EntityManager.GetBuffer<LinkedEntityGroup>(prefab);
-                var instantiateNumbersVfxJob = new InstantiateNumbersVfxJob()
-                {
-                    Ecb = ecb,
-                    DamagesContainer = damageContainers,
-                    NumberPrefab = linkedEntityGroup[1].Value,
-                    ElapsedTime = SystemAPI.Time.ElapsedTime,
-                    CameraPosition = MainCamera.Instance.transform.position,
-                };
-                Dependency = instantiateNumbersVfxJob.Schedule(Dependency);
-            }
+                Ecb = ecb,
+                DamagesContainer = damageContainers,
+                NumberPrefab = _numbersVfxPrefab,
+                ElapsedTime = SystemAPI.Time.ElapsedTime,
+                LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>()
+            };
+            state.Dependency = instantiateNumbersVfxJob.Schedule(state.Dependency);
 
             if (_damageNumberVfxQuery.CalculateChunkCount() != 0)
             {
                 // Move the vfx entities and destroy them if necessary
-                var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
-                    .CreateCommandBuffer(World.Unmanaged);
                 // We probably don't need to parallelize this job, it would probably bring too much overhead.
                 new UpdateVfxNumbers()
                 {
                     ElapsedTime = SystemAPI.Time.ElapsedTime,
                     DeltaTime = SystemAPI.Time.DeltaTime,
-                    CameraPosition = MainCamera.Instance.transform.position,
+                    LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true),
+                    CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>(),
+                    CameraPosition = float3.zero,
                     Ecb = ecb
                 }.Schedule();
-
-                // TODO: move it to a specific system?
-                // Also do the billboarding here.
-                // Get the rotation of the camera via the MainCamera singleton or the CameraEntity singleton.
-
             }
-        }
-
-        /// <summary>
-        /// Creates the prefab of the number entities.
-        /// We don't use baking for now as it creates multiple entities if we add all the material variants on the same renderer.
-        /// </summary>
-        // private void CreateNumberEntityPrefab()
-        // {
-        //     // Create one common RenderMeshArray with the 10 materials, one with each damage digit.
-        //     RenderMeshArray vfxRenderMeshArray = CreateNumbersRenderMeshArray();
-        //     _numberEntityPrefab = EntityManager.CreateEntity(typeof(Prefab));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(LocalToWorld));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(LocalTransform));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(PreviousParent));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(Parent));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(RenderBounds));
-        //     EntityManager.AddComponent(_numberEntityPrefab, typeof(MaterialMeshInfo));
-        //     
-        //     var renderMeshDescription =
-        //         new RenderMeshDescription(ShadowCastingMode.Off, false, MotionVectorGenerationMode.ForceNoMotion);
-        //     RenderMeshUtility.AddComponents(
-        //         _numberEntityPrefab, 
-        //         EntityManager, 
-        //         renderMeshDescription, 
-        //         vfxRenderMeshArray,
-        //         MaterialMeshInfo.FromRenderMeshArrayIndices(0,0));
-        // }
-        
-        // private RenderMeshArray CreateNumbersRenderMeshArray()
-        // {
-        //     Material originDamageVfxMaterial = Resources.Load<Material>("DamageVfxMaterial");
-        //     Material[] damageVfxMaterials = new Material[10];
-        //     for (int i = 0; i < 10; i++)
-        //     {
-        //         var material = new Material(originDamageVfxMaterial) { name = $"DamageVfxMaterial_{i}" };
-        //         material.mainTextureOffset = new Vector2(i / 10f, 0f);
-        //         damageVfxMaterials[i] = material;
-        //     }
-        //
-        //     Mesh quadMesh = CreateQuadMesh(0.1f, 0.1f);
-        //
-        //     return new RenderMeshArray(damageVfxMaterials, new Mesh[] { quadMesh });
-        // }
-        
-        private RenderMeshArray CreateNumbersRenderMeshArray(Mesh mesh, Material originDamageVfxMaterial)
-        {
-            Material[] damageVfxMaterials = new Material[10];
-            for (int i = 0; i < 10; i++)
-            {
-                var material = new Material(originDamageVfxMaterial) { name = $"DamageVfxMaterial_{i}" };
-                material.mainTextureOffset = new Vector2(i / 10f, 0f);
-                damageVfxMaterials[i] = material;
-            }
-
-            return new RenderMeshArray(damageVfxMaterials, new Mesh[] { mesh });
-        }
-
-        private Mesh CreateQuadMesh(float width, float height)
-        {
-            // Picked from https://docs.unity3d.com/6000.3/Documentation/Manual/Example-CreatingaBillboardPlane.html
-            Mesh mesh = new Mesh();
-
-            Vector3[] vertices = new Vector3[4]
-            {
-                new Vector3(0, 0, 0),
-                new Vector3(width, 0, 0),
-                new Vector3(0, height, 0),
-                new Vector3(width, height, 0)
-            };
-            mesh.vertices = vertices;
-
-            int[] tris = new int[6]
-            {
-                // lower left triangle
-                0, 2, 1,
-                // upper right triangle
-                2, 3, 1
-            };
-            mesh.triangles = tris;
-
-            Vector3[] normals = new Vector3[4]
-            {
-                -Vector3.forward,
-                -Vector3.forward,
-                -Vector3.forward,
-                -Vector3.forward
-            };
-            mesh.normals = normals;
-
-            Vector2[] uv = new Vector2[4]
-            {
-                new Vector2(0, 0),
-                new Vector2(1, 0),
-                new Vector2(0, 1),
-                new Vector2(1, 1)
-            };
-            mesh.uv = uv;
-
-            return mesh;
         }
         
         #region Jobs
 
+        /// <summary>
+        /// Creates the vfx entities for each dealt damages.
+        /// </summary>
         [BurstCompile]
         public struct InstantiateNumbersVfxJob : IJob
         {
@@ -218,11 +110,13 @@ namespace Survivor.Runtime.Vfx
             
             public double ElapsedTime;
             
-            public float3 CameraPosition;
+            [ReadOnly]
+            public ComponentLookup<LocalTransform> LocalTransformLookup;
+            public Entity CameraEntity;
 
             public void Execute()
             {
-                
+                float3 cameraPosition = LocalTransformLookup[CameraEntity].Position;
                 // Create a root with DamageNumberVfx + one child for each damage digit.
                 foreach (var entry in DamagesContainer.DamagesPerEntity)
                 {
@@ -240,7 +134,7 @@ namespace Survivor.Runtime.Vfx
                     // TODO: either use a constant or make it editable in a scriptable object or so.
                     float3 numbersPosition = entry.Value.Position + new float3(0f, 3f, 0f);
                     // TODO: should we use a specific quaternion for each digit? I guess one for the whole bunch is ok
-                    quaternion vfxRotation = TransformHelpers.LookAtRotation(CameraPosition, numbersPosition, math.up());
+                    quaternion vfxRotation = TransformHelpers.LookAtRotation(cameraPosition, numbersPosition, math.up());
                     Ecb.AddComponent(rootEntity, new LocalTransform()
                     {
                         Position = numbersPosition,
@@ -272,18 +166,40 @@ namespace Survivor.Runtime.Vfx
             }
         }
 
+        /// <summary>
+        /// Updates the position of the vfx entities, and kills them if they are too old.
+        /// </summary>
         [BurstCompile]
-        public partial struct UpdateVfxNumbers : IJobEntity
+        public partial struct UpdateVfxNumbers : IJobEntity, IJobEntityChunkBeginEnd
         {
+            // TODO: make it editable in a scriptable object or so.
             private const float VFX_LIFETIME = 1.5f;
             private const float VFX_SPEED = 1f;
             
             public double ElapsedTime;
             public float DeltaTime;
             
-            public float3 CameraPosition;
+            // We use LocalToWorld instead of LocalTransform, because we can't have access to a ComponentLookup and a ref/in to the component
+            // at the same time.
+            [ReadOnly]
+            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
+            public Entity CameraEntity;
             
             public EntityCommandBuffer Ecb;
+
+            /// <summary>
+            /// It will be computed for each chunk.
+            /// </summary>
+            public float3 CameraPosition;
+            
+            public bool OnChunkBegin(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            {
+                CameraPosition = LocalToWorldLookup[CameraEntity].Position;
+                return true;
+            }
+
+            public void OnChunkEnd(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask,
+                bool chunkWasExecuted) { }
             
             public void Execute(Entity entity, ref LocalTransform localTransform, in DamageNumberVfx damageNumberVfx, in DynamicBuffer<Child> childrenBuffer)
             {
@@ -291,7 +207,6 @@ namespace Survivor.Runtime.Vfx
                 {
                     float3 newPosition = localTransform.Position + new float3(0f, VFX_SPEED * DeltaTime, 0f);
                     quaternion newRotation = TransformHelpers.LookAtRotation(CameraPosition, newPosition, math.up());
-                    //quaternion newRotation = TransformHelpers.LookAtRotation(newPosition, CameraPosition, -math.up());
                     
                     localTransform.Position = newPosition;
                     localTransform.Rotation = newRotation;

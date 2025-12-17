@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8761553060606394052}
   - component: {fileID: 8809075028107410842}
+  - component: {fileID: 4645439764086918055}
   m_Layer: 0
   m_Name: VfxPrefabsContainer
   m_TagString: Untagged
@@ -45,3 +46,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Vfx.VfxPrefabsContainerAuthoring
   NumbersVfxDigitPrefab: {fileID: 5225161094282580575, guid: 12cadcd256c7133479d7f21a0580d206, type: 3}
+--- !u!114 &4645439764086918055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2642372417810331284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c5b58f8d31375342a221ed113e71008, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Entities.Hybrid::Unity.Entities.SceneSectionComponent
+  SectionIndex: 1

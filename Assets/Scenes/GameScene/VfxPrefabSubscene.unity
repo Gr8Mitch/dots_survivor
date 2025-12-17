@@ -131,6 +131,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: VfxPrefabsContainer
       objectReference: {fileID: 0}
+    - target: {fileID: 4645439764086918055, guid: ec1119475b6a39543b5ceb770bf94363, type: 3}
+      propertyPath: SectionIndex
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 8761553060606394052, guid: ec1119475b6a39543b5ceb770bf94363, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

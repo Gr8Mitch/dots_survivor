@@ -292,12 +292,14 @@ namespace Survivor.Runtime.Controller
     {
         private EntityQuery _characterControllersQuery;
         
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             _characterControllersQuery = SystemAPI.QueryBuilder().WithAll<CharacterController, LocalTransform>().Build();
-            state.RequireAnyForUpdate(_characterControllersQuery);
+            state.RequireForUpdate(_characterControllersQuery);
         }
         
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             new HandleCharacterMovementsVariableUpdateJob()
