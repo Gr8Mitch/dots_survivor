@@ -297,7 +297,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Lifecycle.HealthComponentAuthoring
   HitBoxRadius: 1
-  InitialHitPoints: 1
+  InitialHitPoints: 10
 --- !u!114 &-3875603342612500789
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -173,7 +173,7 @@ namespace Survivor.Runtime.Vfx
         public partial struct UpdateVfxNumbers : IJobEntity, IJobEntityChunkBeginEnd
         {
             // TODO: make it editable in a scriptable object or so.
-            private const float VFX_LIFETIME = 1.5f;
+            private const float VFX_LIFETIME = 1f;
             private const float VFX_SPEED = 1f;
             
             public double ElapsedTime;

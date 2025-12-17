@@ -19,16 +19,20 @@ namespace Survivor.Runtime.Lifecycle
         {
             state.RequireForUpdate<DamagesContainer>();
             state.RequireForUpdate<HealthComponent>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var damagesContainer = SystemAPI.GetSingleton<DamagesContainer>();
+            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
             new UpdateHealthJob()
             {
-                DamagesPerEntity = damagesContainer.DamagesPerEntity
+                DamagesPerEntity = damagesContainer.DamagesPerEntity,
+                Ecb = ecb
             }.ScheduleParallel();
         }
 
@@ -37,8 +41,10 @@ namespace Survivor.Runtime.Lifecycle
         {
             [ReadOnly] 
             public NativeParallelMultiHashMap<Entity, DamagesContainer.DamageData> DamagesPerEntity;
+            
+            public EntityCommandBuffer.ParallelWriter Ecb;
 
-            private void Execute(Entity entity, ref HealthComponent healthComponent)
+            private void Execute(Entity entity, [ChunkIndexInQuery] int chunkIndex, ref HealthComponent healthComponent)
             {
                 if (DamagesPerEntity.TryGetFirstValue(entity, out DamagesContainer.DamageData damagesData, out var iterator))
                 {
@@ -51,7 +57,7 @@ namespace Survivor.Runtime.Lifecycle
 
                     if (healthComponent.HitPoints == 0)
                     {
-                        //TODO: handle death.
+                        Ecb.AddComponent<PendingDestruction>(chunkIndex, entity);
                     }
                 }
             }
