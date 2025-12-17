@@ -66,6 +66,7 @@ namespace Survivor.Runtime.Vfx
 
             // We schedule the job even if there is no damages to display, as it is probably cheaper than creating
             // a sync point to check that the damages container is not empty.
+            var cameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>();
             var instantiateNumbersVfxJob = new InstantiateNumbersVfxJob()
             {
                 Ecb = ecb,
@@ -73,7 +74,7 @@ namespace Survivor.Runtime.Vfx
                 NumberPrefab = _numbersVfxPrefab,
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
                 LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true),
-                CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>()
+                CameraEntity = cameraEntity
             };
             state.Dependency = instantiateNumbersVfxJob.Schedule(state.Dependency);
 
@@ -85,9 +86,6 @@ namespace Survivor.Runtime.Vfx
                 {
                     ElapsedTime = SystemAPI.Time.ElapsedTime,
                     DeltaTime = SystemAPI.Time.DeltaTime,
-                    LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true),
-                    CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>(),
-                    CameraPosition = float3.zero,
                     Ecb = ecb
                 }.Schedule();
             }
@@ -116,7 +114,7 @@ namespace Survivor.Runtime.Vfx
 
             public void Execute()
             {
-                float3 cameraPosition = LocalTransformLookup[CameraEntity].Position;
+                float3 cameraForward = LocalTransformLookup[CameraEntity].Forward();
                 // Create a root with DamageNumberVfx + one child for each damage digit.
                 foreach (var entry in DamagesContainer.DamagesPerEntity)
                 {
@@ -134,7 +132,7 @@ namespace Survivor.Runtime.Vfx
                     // TODO: either use a constant or make it editable in a scriptable object or so.
                     float3 numbersPosition = entry.Value.Position + new float3(0f, 3f, 0f);
                     // TODO: should we use a specific quaternion for each digit? I guess one for the whole bunch is ok
-                    quaternion vfxRotation = TransformHelpers.LookAtRotation(cameraPosition, numbersPosition, math.up());
+                    quaternion vfxRotation = quaternion.LookRotation(cameraForward, math.up());
                     Ecb.AddComponent(rootEntity, new LocalTransform()
                     {
                         Position = numbersPosition,
@@ -170,7 +168,7 @@ namespace Survivor.Runtime.Vfx
         /// Updates the position of the vfx entities, and kills them if they are too old.
         /// </summary>
         [BurstCompile]
-        public partial struct UpdateVfxNumbers : IJobEntity, IJobEntityChunkBeginEnd
+        public partial struct UpdateVfxNumbers : IJobEntity
         {
             // TODO: make it editable in a scriptable object or so.
             private const float VFX_LIFETIME = 1f;
@@ -179,38 +177,15 @@ namespace Survivor.Runtime.Vfx
             public double ElapsedTime;
             public float DeltaTime;
             
-            // We use LocalToWorld instead of LocalTransform, because we can't have access to a ComponentLookup and a ref/in to the component
-            // at the same time.
-            [ReadOnly]
-            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
-            public Entity CameraEntity;
-            
             public EntityCommandBuffer Ecb;
-
-            /// <summary>
-            /// It will be computed for each chunk.
-            /// </summary>
-            public float3 CameraPosition;
-            
-            public bool OnChunkBegin(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                CameraPosition = LocalToWorldLookup[CameraEntity].Position;
-                return true;
-            }
-
-            public void OnChunkEnd(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask,
-                bool chunkWasExecuted) { }
             
             public void Execute(Entity entity, ref LocalTransform localTransform, in DamageNumberVfx damageNumberVfx, in DynamicBuffer<Child> childrenBuffer)
             {
                 if (ElapsedTime - damageNumberVfx.CreationElaspedTime < VFX_LIFETIME)
                 {
-                    float3 newPosition = localTransform.Position + new float3(0f, VFX_SPEED * DeltaTime, 0f);
-                    quaternion newRotation = TransformHelpers.LookAtRotation(CameraPosition, newPosition, math.up());
+                    localTransform.Position += new float3(0f, VFX_SPEED * DeltaTime, 0f);
+                    // No need to change the rotation regarding the billboard as long as the camera is not rotating.
                     
-                    localTransform.Position = newPosition;
-                    localTransform.Rotation = newRotation;
-
                     // TODO: change the alpha with time?
                 }
                 else
