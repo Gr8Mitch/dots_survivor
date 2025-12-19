@@ -24,7 +24,7 @@ namespace Survivor.Runtime.Vfx
             new UpdateCharacterAbilitiesJob()
             {
                 CharacterBodyDataLookup = SystemAPI.GetComponentLookup<CharacterBodyData>(true),
-                LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true)
+                LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(false)
             }.Schedule();
         }
 
@@ -34,10 +34,10 @@ namespace Survivor.Runtime.Vfx
             [ReadOnly]
             public ComponentLookup<CharacterBodyData> CharacterBodyDataLookup;
             
-            [ReadOnly]
             public ComponentLookup<LocalToWorld> LocalToWorldLookup;
             
-            private void Execute(ref LocalTransform localTransform,
+            private void Execute(Entity entity, 
+                ref LocalTransform localTransform,
                 in CharacterAbilityVfxComponent characterAbilityVfxComponent)
             {
                 if (characterAbilityVfxComponent.AlignWithCharacterGround)
@@ -51,6 +51,12 @@ namespace Survivor.Runtime.Vfx
                     var characterLocalToWorld = LocalToWorldLookup[characterAbilityVfxComponent.CharacterEntity];
                     localTransform.Position = characterLocalToWorld.Position + math.mul(localTransform.Rotation, characterAbilityVfxComponent.PositionOffset);
                 }
+                
+                // Also update the LocalToWorld as the LocalToWorldSystem was already updated.
+                LocalToWorldLookup[entity] = new LocalToWorld()
+                {
+                    Value = float4x4.TRS(localTransform.Position, localTransform.Rotation, new float3(localTransform.Scale))
+                };
             }
         }
     }
