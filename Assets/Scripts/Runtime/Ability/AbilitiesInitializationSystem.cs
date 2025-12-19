@@ -1,12 +1,12 @@
-using Survivor.Runtime.Character;
-using Survivor.Runtime.Lifecycle;
-
 namespace Survivor.Runtime.Ability
 {
     using Unity.Burst;
     using Unity.Entities;
     using Unity.Collections;
     using Unity.Transforms;
+    using Survivor.Runtime.Character;
+    using Survivor.Runtime.Lifecycle;
+    using Survivor.Runtime.Vfx;
 
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [BurstCompile]
@@ -77,6 +77,7 @@ namespace Survivor.Runtime.Ability
                         if (AbilityComponentLookup[abilityPrefab.Value].AbilityId == pendingAbility.AbilityId)
                         {
                             Entity abilityInstance = Ecb.Instantiate(abilityPrefab.Value);
+                            Ecb.SetName(abilityInstance, "Ability");
                             ownedAbilities.Add(new OwnedAbility()
                             {
                                 AbilityEntity = abilityInstance
@@ -96,6 +97,25 @@ namespace Survivor.Runtime.Ability
                             {
                                 Ecb.AddComponent<DamagesToPlayer>(abilityInstance);
                             }
+                            
+                            Ecb.AppendToBuffer(abilityOwnerEntity, new OwnedAbility()
+                            {
+                                AbilityEntity = abilityInstance
+                            });
+
+                            Ecb.SetComponent(abilityInstance, new AbilityComponent()
+                            {
+                                AbilityId = pendingAbility.AbilityId,
+                                Owner = abilityOwnerEntity
+                            });
+                            
+                            // Make sure the entity is destroyed when the owner is destroyed.
+                            Ecb.AppendToBuffer(abilityOwnerEntity, new LinkedEntityGroup()
+                            {
+                                Value = abilityInstance
+                            });
+                            
+                            Ecb.AddComponent<VfxPrefabNotCreated>(abilityInstance);
                             
                             break;
                         }

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b8b8ae812d870448cf13819f1ac041, type: 3}
+  m_Name: DamageZoneAbility-VfxPrefabSettings
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Vfx.VfxPrefabSettings
+  _id:
+    Value: 0
+  _assetReference:
+    m_AssetGUID: 685e9ddf7e6d19446b6d1d8b500a802e
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  _localPosition: {x: 0, y: 0.5, z: 0}
+  _localRotationEuler: {x: 0, y: 0, z: 0}
+  _vfxSettings: {fileID: 11400000, guid: 1c8e2fa60c43c724684d8653eab06e53, type: 2}

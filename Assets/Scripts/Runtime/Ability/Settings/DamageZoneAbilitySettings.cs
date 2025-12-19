@@ -3,10 +3,12 @@ namespace Survivor.Runtime.Ability
     using UnityEngine;
     using Unity.Entities;
     using Survivor.Runtime.Lifecycle;
+    using Survivor.Runtime.Vfx;
 
     [CreateAssetMenu(fileName = "DamageZoneAbilitySettings", menuName = "Survivor/Abilities/DamageZoneAbilitySettings")]
     public class DamageZoneAbilitySettings : IAbilitySettings
     {
+        [Header("Damage Zone ability")]
         [SerializeField]
         private ushort _damages = 1;
         
@@ -19,8 +21,11 @@ namespace Survivor.Runtime.Ability
         [SerializeField]
         private float _damagesCooldown = 1f;
         
+        
         public override void Bake(Entity abilityEntity, AbilitiesContainerAuthoring.AbilitiesContainerAuthoringBaker baker)
         {
+            base.Bake(abilityEntity, baker);
+            
             baker.AddComponent(abilityEntity, new DamageSphereZone()
             {
                 Radius = _zoneRadius

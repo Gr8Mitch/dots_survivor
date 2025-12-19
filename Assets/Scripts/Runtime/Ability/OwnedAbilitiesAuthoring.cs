@@ -1,5 +1,3 @@
-using Unity.Transforms;
-
 namespace Survivor.Runtime.Ability
 {
     using Unity.Entities;
@@ -10,6 +8,7 @@ namespace Survivor.Runtime.Ability
     /// </summary>
     public struct AbilityComponent : IComponentData
     {
+        // TODO: Make it a specific type to be able to create a specific drawer and ensure its uniqueness.
         public ushort AbilityId;
         public Entity Owner;
     }

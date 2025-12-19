@@ -17,3 +17,4 @@ MonoBehaviour:
   _damages: 2
   _zoneRadius: 10
   _damagesCooldown: 1
+  _vfxPrefabSettings: {fileID: 11400000, guid: a30ad128c4f722f45ab909e47ac38c7a, type: 2}

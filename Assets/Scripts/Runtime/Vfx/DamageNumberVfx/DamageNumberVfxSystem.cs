@@ -36,7 +36,7 @@ namespace Survivor.Runtime.Vfx
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<DamagesContainer>();
-            state.RequireForUpdate<VfxPrefabsContainer>();
+            state.RequireForUpdate<DamageNumberVfxPrefabContainer>();
             state.RequireForUpdate<CameraEntity>();
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
             _damageNumberVfxQuery = SystemAPI.QueryBuilder().WithAll<DamageNumberVfx>().Build();
@@ -50,7 +50,7 @@ namespace Survivor.Runtime.Vfx
             // RenderMeshArray contains all the meshes and materials referenced by the subscene !!!!!
             // Because the prefab has multiple materials, it creates a LinkedEntityGroup with 11 entities (including a root).
             // The one with the index 1 is the 0 digit.
-            var prefab = SystemAPI.GetSingleton<VfxPrefabsContainer>().NumbersVfxDigitPrefab;
+            var prefab = SystemAPI.GetSingleton<DamageNumberVfxPrefabContainer>().NumbersVfxDigitPrefab;
             var linkedEntityGroup = state.EntityManager.GetBuffer<LinkedEntityGroup>(prefab);
             _numbersVfxPrefab = linkedEntityGroup[1].Value;
         }

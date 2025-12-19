@@ -1,10 +1,12 @@
-using Unity.Transforms;
-
 namespace Survivor.Runtime.Ability
 {
     using Unity.Entities;
     using UnityEngine;
+    using Unity.Transforms;
 
+    /// <summary>
+    /// Contains the prefab entity used to manage abilities.
+    /// </summary>
     public struct AbilityPrefab : IBufferElementData
     {
         public Entity Value;

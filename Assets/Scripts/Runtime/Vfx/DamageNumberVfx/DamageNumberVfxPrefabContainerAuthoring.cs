@@ -6,21 +6,21 @@ namespace Survivor.Runtime.Vfx
     /// <summary>
     /// Contains the prefabs linked to the vfxs
     /// </summary>
-    public struct VfxPrefabsContainer : IComponentData
+    public struct DamageNumberVfxPrefabContainer : IComponentData
     {
         public Entity NumbersVfxDigitPrefab;
     }
     
-    class VfxPrefabsContainerAuthoring : MonoBehaviour
+    class DamageNumberVfxPrefabContainerAuthoring : MonoBehaviour
     {
         public GameObject NumbersVfxDigitPrefab;
         
-        class VfxPrefabsContainerAuthoringBaker : Baker<VfxPrefabsContainerAuthoring>
+        class DamageNumberVfxPrefabContainerAuthoringBaker : Baker<DamageNumberVfxPrefabContainerAuthoring>
         {
-            public override void Bake(VfxPrefabsContainerAuthoring authoring)
+            public override void Bake(DamageNumberVfxPrefabContainerAuthoring authoring)
             {
                 var containerEntity = GetEntity(TransformUsageFlags.None);
-                AddComponent(containerEntity, new VfxPrefabsContainer()
+                AddComponent(containerEntity, new DamageNumberVfxPrefabContainer()
                 {
                     NumbersVfxDigitPrefab = GetEntity(authoring.NumbersVfxDigitPrefab, TransformUsageFlags.Renderable)
                 });

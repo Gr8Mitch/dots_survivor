@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: AbilitiesVfx
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: AbilitiesVfx
+  m_GUID: 43960879631c7cc4698095417af6d606
+  m_SerializeEntries:
+  - m_GUID: 2aed2810d2f8aad46b187414c3ed4bfa
+    m_Address: VfxPrefabsSettingsContainer
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 685e9ddf7e6d19446b6d1d8b500a802e
+    m_Address: CircleLineVfx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 49b560e50e053214fbbf4927056c8a29, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: fea38b95cec8a4c4db8cc44bfb67e490, type: 2}
+    - {fileID: 11400000, guid: 3499fb1c579c981489ac0af9f03c93ae, type: 2}
