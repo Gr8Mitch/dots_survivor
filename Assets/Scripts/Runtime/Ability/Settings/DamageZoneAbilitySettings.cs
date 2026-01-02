@@ -3,8 +3,10 @@ namespace Survivor.Runtime.Ability
     using UnityEngine;
     using Unity.Entities;
     using Survivor.Runtime.Lifecycle;
-    using Survivor.Runtime.Vfx;
 
+    /// <summary>
+    /// The <see cref="IAbilitySettings"/> related to an ability that periodically deals damage to entities in a zone.
+    /// </summary>
     [CreateAssetMenu(fileName = "DamageZoneAbilitySettings", menuName = "Survivor/Abilities/DamageZoneAbilitySettings")]
     public class DamageZoneAbilitySettings : IAbilitySettings
     {
@@ -20,7 +22,6 @@ namespace Survivor.Runtime.Ability
         /// </summary>
         [SerializeField]
         private float _damagesCooldown = 1f;
-        
         
         public override void Bake(Entity abilityEntity, AbilitiesContainerAuthoring.AbilitiesContainerAuthoringBaker baker)
         {

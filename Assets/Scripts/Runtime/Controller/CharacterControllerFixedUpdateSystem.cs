@@ -209,6 +209,7 @@ namespace Survivor.Runtime.Controller
         
                 bool isEnemy =
                     EnemyCharacterComponentLookup.TryGetComponent(characterEntity, out var enemyCharacterComponent);
+                // TODO: add these data in a component to avoid the random access?
                 var castColliderData = CastCollidersContainer.GetColliderData(isEnemy ? enemyCharacterComponent.EnemyTypeId : null);
                 
                 if (isInterpolating)

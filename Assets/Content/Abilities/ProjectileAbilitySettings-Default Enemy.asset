@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beabe0ab17ddff046828f37048de2674, type: 3}
+  m_Name: ProjectileAbilitySettings-Default Enemy
+  m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.ProjectileAbilitySettings
+  _abilityId: 1
+  _debugName: Default Projectile ability - Enemy
+  _vfxPrefabSettings: {fileID: 0}
+  _replicateCharacterPosition: 0
+  _alignWithCharacterGround: 0
+  _projectilePrefab: {fileID: 887173161433994726, guid: e50691bc0830a104d96988f3ae3fff1e, type: 3}
+  _damages: 1
+  _launchInterval: 1
+  _lifetime: 10
+  _initialVelocity: 10
+  _minimalDistanceToTarget: 20

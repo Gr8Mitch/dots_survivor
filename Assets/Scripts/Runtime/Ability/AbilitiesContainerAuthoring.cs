@@ -34,6 +34,8 @@ namespace Survivor.Runtime.Ability
                             AbilityId = abilitySetting.AbilityId
                         });
                         
+                        AddComponent<Prefab>(abilityEntity);
+                        
                         // Abilities are always children entities.
                         AddComponent<Parent>(abilityEntity);
                         

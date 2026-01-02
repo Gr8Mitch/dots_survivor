@@ -15,13 +15,15 @@ namespace Survivor.Runtime.Ability
         private string _debugName;
 
         [Header("VFX Settings")]
-        
         [SerializeField] 
         private VfxPrefabSettings _vfxPrefabSettings;
         
+        // TODO: make it not visible in the inspector if _vfxPrefabSettings is null.
+        [Tooltip("True if the VFX must replicate the position of the owner character.")]
         [SerializeField]
         private bool _replicateCharacterPosition = true;
 
+        [Tooltip("True if the VFX must align with the ground normal of the owner character.")]
         [SerializeField]
         private bool _alignWithCharacterGround = true;
 

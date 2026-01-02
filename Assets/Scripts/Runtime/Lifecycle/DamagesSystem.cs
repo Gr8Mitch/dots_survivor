@@ -32,112 +32,106 @@ namespace Survivor.Runtime.Lifecycle
             DamagesPerEntity.Dispose();
         }
     }
+
+    public readonly struct DamageReceiverData
+    {
+        public readonly float3 Position;
+        public readonly float HitBoxRadius;
+        public readonly Entity Entity;
+
+        public DamageReceiverData(float3 position, float hitBoxRadius, Entity entity)
+        {
+            Position = position;
+            HitBoxRadius = hitBoxRadius;
+            Entity = entity;
+        }
+    }
     
     /// <summary>
-    /// Computes all the damages that needs to be dealt.
+    /// A singleton component that contains all the damage receivers entities + some additional data.
+    /// Gets refreshed every frame.
+    /// </summary>
+    public struct DamageReceiversContainer : IComponentData
+    {
+        public NativeList<DamageReceiverData> EnemyDamageReceivers;
+        public NativeReference<DamageReceiverData> PlayerDamageReceiver;
+
+        public void Dispose()
+        {
+            EnemyDamageReceivers.Dispose();
+            PlayerDamageReceiver.Dispose();
+        }
+
+        public void EnsureCapacity(int damageReceiversCount)
+        {
+            if (EnemyDamageReceivers.Capacity < damageReceiversCount)
+            {
+                // Resize the container now, we can't do it in the job because of the ParallelWriter.
+                EnemyDamageReceivers.Resize(math.ceilpow2(damageReceiversCount), NativeArrayOptions.UninitializedMemory);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Fetches the entities that can receive damages.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(TransformSystemGroup))]
     [BurstCompile]
-    partial struct DamagesSystem : ISystem
+    public partial struct DamageReceiversFetcherSystem : ISystem
     {
-        private const int DAMAGES_CONTAINER_INITIAL_CAPACITY = 128;
-        
-        private readonly struct DamageReceiverData
-        {
-            public readonly float3 Position;
-            public readonly float HitBoxRadius;
-            public readonly Entity Entity;
-
-            public DamageReceiverData(float3 position, float hitBoxRadius, Entity entity)
-            {
-                Position = position;
-                HitBoxRadius = hitBoxRadius;
-                Entity = entity;
-            }
-        }
-        
-        private NativeList<DamageReceiverData> _enemyDamageReceivers;
-        private NativeReference<DamageReceiverData> _playerDamageReceiver;
         private EntityQuery _damageReceiversQuery;
-        private EntityQuery _damageDealerQuery;
-        
+
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            _damageReceiversQuery = SystemAPI.QueryBuilder().WithAll<HealthComponent>().Build();
-            _damageDealerQuery = SystemAPI.QueryBuilder().WithAll<DamageDealer, LocalToWorld>().Build();
+            _damageReceiversQuery = SystemAPI.QueryBuilder().WithAll<HealthComponent, LocalTransform>().Build();
             
-            state.EntityManager.CreateSingleton<DamagesContainer>(
-                new DamagesContainer(DAMAGES_CONTAINER_INITIAL_CAPACITY, Allocator.Persistent));
-            _enemyDamageReceivers =
-                new NativeList<DamageReceiverData>(math.ceilpow2(EnemySpawnSystem.MAX_ENEMIES), Allocator.Persistent);
-            _playerDamageReceiver = new NativeReference<DamageReceiverData>(Allocator.Persistent);
+            // Create the DamageReceiversContainer singleton
+            DamageReceiversContainer damageReceiversContainer = new DamageReceiversContainer()
+            {
+                EnemyDamageReceivers =
+                    new NativeList<DamageReceiverData>(math.ceilpow2(EnemySpawnSystem.MAX_ENEMIES),
+                        Allocator.Persistent),
+                PlayerDamageReceiver = new NativeReference<DamageReceiverData>(Allocator.Persistent)
+            };
+            state.EntityManager.CreateSingleton(damageReceiversContainer);
             
-            state.RequireForUpdate<DamagesContainer>();
-            state.RequireForUpdate<AvatarCharacterComponent>();
+            state.RequireForUpdate<DamageReceiversContainer>();
             state.RequireForUpdate(_damageReceiversQuery);
-            state.RequireForUpdate(_damageDealerQuery);
         }
 
         [BurstCompile]
         public void OnDestroy(ref SystemState state)
         {
-            _playerDamageReceiver.Dispose();
-            _enemyDamageReceivers.Dispose();
-            
-            if (SystemAPI.TryGetSingleton<DamagesContainer>(out var container))
+            // Destroys the DamageReceiversContainer singleton
+            if (SystemAPI.TryGetSingleton<DamageReceiversContainer>(out var container))
             {
                 container.Dispose();
-                state.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<DamagesContainer>());
+                state.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<DamageReceiversContainer>());
             }
         }
-        
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            if (_enemyDamageReceivers.Capacity < _damageReceiversQuery.CalculateEntityCount())
-            {
-                // Resize the container now, we can't do it in the job because of the ParallelWriter.
-                _enemyDamageReceivers.Resize(math.ceilpow2(_enemyDamageReceivers.Length), NativeArrayOptions.UninitializedMemory);
-            }
+            state.EntityManager.CompleteDependencyBeforeRW<DamageReceiversContainer>();
+            var damageReceiversContainer = SystemAPI.GetSingletonRW<DamageReceiversContainer>();
+            damageReceiversContainer.ValueRW.EnsureCapacity(_damageReceiversQuery.CalculateEntityCount());
+
+            damageReceiversContainer.ValueRW.EnemyDamageReceivers.Clear();
             
-            _enemyDamageReceivers.Clear();
-
-            state.EntityManager.CompleteDependencyBeforeRW<DamagesContainer>();
-            var damagesContainer = SystemAPI.GetSingletonRW<DamagesContainer>();
-            ref var damagesPerEntity = ref damagesContainer.ValueRW.DamagesPerEntity;
-            damagesPerEntity.Clear();
-            if (damagesPerEntity.Capacity < _damageReceiversQuery.CalculateEntityCount() + 1)
-            {
-                damagesPerEntity.Capacity = math.ceilpow2(_damageDealerQuery.CalculateEntityCount() + 1);
-            }
-
             new FetchEnemyDamageReceiverDataJob()
             {
-                DamageReceivers = _enemyDamageReceivers.AsParallelWriter()
+                DamageReceivers = damageReceiversContainer.ValueRW.EnemyDamageReceivers.AsParallelWriter()
             }.ScheduleParallel();
 
             new FetchPlayerDamageReceiverDataJob()
             {
-                PlayerData = _playerDamageReceiver
+                PlayerData = damageReceiversContainer.ValueRW.PlayerDamageReceiver
             }.Schedule();
-            
-            var job = new ComputeDamagesJob()
-            {
-                DamageDealerTypeHandle = SystemAPI.GetComponentTypeHandle<DamageDealer>(true),
-                LocalToWorldTypeHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(true),
-                DamageSphereZoneTypeHandle = SystemAPI.GetComponentTypeHandle<DamageSphereZone>(true),
-                TargetedDamagesTypeHandle = SystemAPI.GetComponentTypeHandle<TargetedDamages>(true),
-                DamageCooldownTypeHandle = SystemAPI.GetComponentTypeHandle<DamageCooldown>(false),
-                EnemyDamageReceivers = _enemyDamageReceivers,
-                ElapsedTime = SystemAPI.Time.ElapsedTime,
-                DamagesPerEntity = damagesPerEntity.AsParallelWriter(),
-                PlayerData = _playerDamageReceiver
-            };
-            state.Dependency = job.ScheduleParallel(_damageDealerQuery, state.Dependency);
         }
-
+        
         [BurstCompile]
         [WithAll(typeof(EnemyCharacterComponent))]
         private partial struct FetchEnemyDamageReceiverDataJob : IJobEntity
@@ -161,10 +155,90 @@ namespace Survivor.Runtime.Lifecycle
                 PlayerData.Value = new DamageReceiverData(localTransform.Position, healthComponent.HitBoxRadius, entity);
             }
         }
+    }
+    
+    /// <summary>
+    /// Computes all the damages that needs to be dealt.
+    /// </summary>
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(TransformSystemGroup))]
+    [UpdateAfter(typeof(DamageReceiversFetcherSystem))]
+    [BurstCompile]
+    public partial struct DamagesSystem : ISystem
+    {
+        private const int DAMAGES_CONTAINER_INITIAL_CAPACITY = 128;
+        
+        private EntityQuery _damageReceiversQuery;
+        private EntityQuery _damageDealerQuery;
+        
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            _damageDealerQuery = SystemAPI.QueryBuilder().WithAll<DamageDealer, LocalToWorld>().Build();
+            _damageReceiversQuery = SystemAPI.QueryBuilder().WithAll<HealthComponent, LocalTransform>().Build();
+            
+            state.EntityManager.CreateSingleton<DamagesContainer>(
+                new DamagesContainer(DAMAGES_CONTAINER_INITIAL_CAPACITY, Allocator.Persistent));
+            
+            state.RequireForUpdate<DamagesContainer>();
+            state.RequireForUpdate<AvatarCharacterComponent>();
+            state.RequireForUpdate<DamageReceiversContainer>();
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+            state.RequireForUpdate(_damageReceiversQuery);
+            state.RequireForUpdate(_damageDealerQuery);
+        }
 
+        [BurstCompile]
+        public void OnDestroy(ref SystemState state)
+        {
+            if (SystemAPI.TryGetSingleton<DamagesContainer>(out var container))
+            {
+                container.Dispose();
+                state.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<DamagesContainer>());
+            }
+        }
+        
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            state.EntityManager.CompleteDependencyBeforeRW<DamagesContainer>();
+            var damagesContainer = SystemAPI.GetSingletonRW<DamagesContainer>();
+            ref var damagesPerEntity = ref damagesContainer.ValueRW.DamagesPerEntity;
+            damagesPerEntity.Clear();
+            if (damagesPerEntity.Capacity < _damageReceiversQuery.CalculateEntityCount() + 1)
+            {
+                damagesPerEntity.Capacity = math.ceilpow2(_damageDealerQuery.CalculateEntityCount() + 1);
+            }
+            
+            state.EntityManager.CompleteDependencyBeforeRO<DamageReceiversContainer>();
+            var damagesReceiversContainer = SystemAPI.GetSingleton<DamageReceiversContainer>();
+            var ecbParallel = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+                .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+            
+            var job = new ComputeDamagesJob()
+            {
+                EntityTypeHandle = SystemAPI.GetEntityTypeHandle(),
+                DamageDealerTypeHandle = SystemAPI.GetComponentTypeHandle<DamageDealer>(true),
+                LocalToWorldTypeHandle = SystemAPI.GetComponentTypeHandle<LocalToWorld>(true),
+                DamageSphereZoneTypeHandle = SystemAPI.GetComponentTypeHandle<DamageSphereZone>(true),
+                TargetedDamagesTypeHandle = SystemAPI.GetComponentTypeHandle<TargetedDamages>(true),
+                DestroyOnDamageTypeHandle = SystemAPI.GetComponentTypeHandle<DestroyOnDamage>(true),
+                DamageCooldownTypeHandle = SystemAPI.GetComponentTypeHandle<DamageCooldown>(false),
+                EnemyDamageReceivers = damagesReceiversContainer.EnemyDamageReceivers,
+                ElapsedTime = SystemAPI.Time.ElapsedTime,
+                DamagesPerEntity = damagesPerEntity.AsParallelWriter(),
+                PlayerData = damagesReceiversContainer.PlayerDamageReceiver,
+                EcbParallel = ecbParallel
+            };
+            state.Dependency = job.ScheduleParallel(_damageDealerQuery, state.Dependency);
+        }
+        
         [BurstCompile]
         private struct ComputeDamagesJob : IJobChunk
         {
+            [ReadOnly]
+            public EntityTypeHandle EntityTypeHandle;
+            
             [ReadOnly]
             public ComponentTypeHandle<DamageDealer> DamageDealerTypeHandle;
             
@@ -180,6 +254,9 @@ namespace Survivor.Runtime.Lifecycle
             [ReadOnly]
             public ComponentTypeHandle<TargetedDamages> TargetedDamagesTypeHandle;
             
+            [ReadOnly]
+            public ComponentTypeHandle<DestroyOnDamage> DestroyOnDamageTypeHandle;
+            
             public ComponentTypeHandle<DamageCooldown> DamageCooldownTypeHandle;
             
             [ReadOnly]
@@ -193,9 +270,12 @@ namespace Survivor.Runtime.Lifecycle
             [ReadOnly]
             public NativeReference<DamageReceiverData> PlayerData;
             
+            public EntityCommandBuffer.ParallelWriter EcbParallel;
+            
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
                 // TODO : check if we really have performance difference using the pointers.
+                var entities = chunk.GetNativeArray(EntityTypeHandle);
                 var damageDealers = chunk.GetNativeArray(ref DamageDealerTypeHandle);
                 var localToWorlds = chunk.GetNativeArray(ref LocalToWorldTypeHandle);
                 bool isDamageSphereZone = chunk.Has<DamageSphereZone>();
@@ -206,7 +286,8 @@ namespace Survivor.Runtime.Lifecycle
                 var damageCooldowns = isCooldownDamage ? chunk.GetNativeArray(ref DamageCooldownTypeHandle) : default;
                 bool areDamagesForEnemies = chunk.Has<DamagesToEnemy>();
 
-                // TODO: handle destroy on hit.
+                bool mustBeDestroyedOnDamage = chunk.Has<DestroyOnDamage>();
+                
                 // Cooldown: first check if the cooldown is over. Not need to check further if not
                 // Sphere zone: do the damages to all eligible the receivers in the zone
                 // Targeted damages: do the damages only to the targeted receiver if in the receiver hit box zone.
@@ -222,7 +303,8 @@ namespace Survivor.Runtime.Lifecycle
                         float zoneRadius = isDamageSphereZone ? damageSphereZones[i].Radius : 0f;
                         float3 damagePosition = localToWorlds[i].Position;
                         ushort damages = damageDealers[i].Damages;
-                        
+
+                        bool hasInflictedDamages = false;
                         // Check all the enemies to see if the damages can be dealt to them.
                         foreach (var enemyDamageReceiver in EnemyDamageReceivers)
                         {
@@ -240,7 +322,14 @@ namespace Survivor.Runtime.Lifecycle
                                     Damages = damages,
                                     Position = enemyDamageReceiver.Position
                                 });
+                                hasInflictedDamages = true;
                             }
+                        }
+
+                        if (hasInflictedDamages && mustBeDestroyedOnDamage)
+                        {
+                            // TODO: create a common flow for the projectiles to be destroyed, like adding a command somewhere, or create an entity.
+                            EcbParallel.DestroyEntity(unfilteredChunkIndex, entities[i]);
                         }
                     }
                 }
@@ -266,6 +355,12 @@ namespace Survivor.Runtime.Lifecycle
                                 Damages = damages,
                                 Position = damagePosition
                             });
+                            
+                            if (mustBeDestroyedOnDamage)
+                            {
+                                // TODO: create a common flow for the projectiles to be destroyed, like adding a command somewhere, or create an entity.
+                                EcbParallel.DestroyEntity(unfilteredChunkIndex, entities[i]);
+                            }
                         }
                     }
                 }
