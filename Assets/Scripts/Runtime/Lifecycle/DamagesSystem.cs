@@ -358,8 +358,8 @@ namespace Survivor.Runtime.Lifecycle
                             
                             if (mustBeDestroyedOnDamage)
                             {
-                                // TODO: create a common flow for the projectiles to be destroyed, like adding a command somewhere, or create an entity.
-                                EcbParallel.DestroyEntity(unfilteredChunkIndex, entities[i]);
+                                // The entity will be destroyed in the next frame.
+                                EcbParallel.AddComponent<PendingDestruction>(unfilteredChunkIndex, entities[i]);
                             }
                         }
                     }

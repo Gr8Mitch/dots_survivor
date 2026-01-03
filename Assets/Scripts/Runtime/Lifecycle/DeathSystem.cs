@@ -3,21 +3,14 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Burst;
     using Unity.Entities;
     using Survivor.Runtime.Character;
-
-    // TODO: also add PendingDestruction to all the entities of the LinkedEntityGroup so that we can destroy the entities
-    // directly through the EntityQuery? Maybe it would be much faster.
-    /// <summary>
-    /// A tag component to mark a entity as dead, waiting to be destroyed.
-    /// </summary>
-    public struct PendingDestruction : IComponentData { }
     
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     [BurstCompile]
     partial struct DeathSystem : ISystem
     {
         private EntityQuery _nonAvatarPendingDestructionQuery;
+        private EntityQuery _limitedLifetimeQuery;
         
-        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             _nonAvatarPendingDestructionQuery = SystemAPI
@@ -25,7 +18,13 @@ namespace Survivor.Runtime.Lifecycle
                 .WithAll<PendingDestruction>()
                 .WithNone<AvatarCharacterComponent>().Build();
             
-            state.RequireForUpdate(_nonAvatarPendingDestructionQuery);
+            _limitedLifetimeQuery = SystemAPI
+                .QueryBuilder()
+                .WithAll<LimitedLifetime>()
+                .WithNone<PendingDestruction>()
+                .Build();
+            
+            state.RequireAnyForUpdate(_nonAvatarPendingDestructionQuery, _limitedLifetimeQuery);
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -41,6 +40,12 @@ namespace Survivor.Runtime.Lifecycle
             {
                 Ecb = ecb
             }.Schedule(_nonAvatarPendingDestructionQuery);
+
+            new UpdateLimitedLifetimeEntities()
+            {
+                DeltaTime = SystemAPI.Time.DeltaTime,
+                Ecb = ecb
+            }.Schedule(_limitedLifetimeQuery);
         }
 
         /// <summary>
@@ -54,6 +59,22 @@ namespace Survivor.Runtime.Lifecycle
             private void Execute(Entity entity)
             {
                 Ecb.DestroyEntity(entity);
+            }
+        }
+
+        [BurstCompile]
+        private partial struct UpdateLimitedLifetimeEntities : IJobEntity
+        {
+            public float DeltaTime;
+            public EntityCommandBuffer Ecb;
+            
+            public void Execute(Entity entity, ref LimitedLifetime lifetime)
+            {
+                lifetime.RemainingLifetime -= DeltaTime;
+                if (lifetime.RemainingLifetime <= 0f)
+                {
+                    Ecb.AddComponent<PendingDestruction>(entity);
+                }
             }
         }
     }

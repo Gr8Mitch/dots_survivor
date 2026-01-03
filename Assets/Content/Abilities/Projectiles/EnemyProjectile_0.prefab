@@ -103,6 +103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df06d47c79c5998409c43e7d48e583b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Projectiles.ProjectileComponentAuthoring
+  Lifetime: 20
 --- !u!114 &8681655686253952626
 MonoBehaviour:
   m_ObjectHideFlags: 0

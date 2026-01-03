@@ -8,6 +8,7 @@ namespace Survivor.Runtime.Projectiles
     using Survivor.Runtime.Common;
     using Survivor.Runtime.Physics;
     using Unity.Mathematics;
+    using Survivor.Runtime.Lifecycle;
 
     /// <summary>
     /// Updates the position of all the projectiles according to their velocity and destroy them if they hit something.
@@ -71,9 +72,8 @@ namespace Survivor.Runtime.Projectiles
                 bool hasCollided = PhysicsWorld.CastRay(raycastInput);
                 if (hasCollided)
                 {
-                    // TODO: we should probably use a separate work flow to deal with vfx and sounds. Like adding a death command.
-                    // Destroy the projectile.
-                    EcbParallel.DestroyEntity(chunkIndex, entity);
+                    // The projectile will be destroyed in the next frame.
+                    EcbParallel.AddComponent<PendingDestruction>(chunkIndex, entity);
                 }
                 else
                 {
