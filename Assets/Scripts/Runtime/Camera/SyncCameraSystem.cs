@@ -4,7 +4,7 @@ namespace Survivor.Runtime.Camera
     using Unity.Transforms;
 
     /// <summary>
-    /// Syncs the camera gameobject transform with the target entity transform.
+    /// Syncs the camera gameobject transform with the entity representing the camera.
     /// </summary>
     [UpdateInGroup(typeof(PresentationSystemGroup))]
     partial class SyncCameraSystem : SystemBase

@@ -30,17 +30,17 @@ namespace Survivor.Runtime.Projectiles
         {
             state.EntityManager.CompleteDependencyBeforeRO<DamageReceiversContainer>();
             var damageReceiversContainer = SystemAPI.GetSingleton<DamageReceiversContainer>();
-            // TODO: is it worth parallelizing this job?
-            var ecbParallel = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+            // This is not really worth parallelizing it, it is not that heavy;
+            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
             new LaunchProjectilesJob()
             {
                 DamageReceiversContainer = damageReceiversContainer,
                 EnemyCharacterComponentLookup = SystemAPI.GetComponentLookup<EnemyCharacterComponent>(true),
                 LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true),
-                EcbParallel = ecbParallel,
+                Ecb = ecb,
                 CurrentElapsedTime = SystemAPI.Time.ElapsedTime
-            }.ScheduleParallel();
+            }.Schedule();
         }
 
         [BurstCompile]
@@ -55,11 +55,11 @@ namespace Survivor.Runtime.Projectiles
             [ReadOnly]
             public ComponentLookup<LocalTransform> LocalTransformLookup;
             
-            public EntityCommandBuffer.ParallelWriter EcbParallel;
+            public EntityCommandBuffer Ecb;
             
             public double CurrentElapsedTime;
             
-            private void Execute([ChunkIndexInQuery] int chunkIndex, ref ProjectileLauncher projectileLauncher, in AbilityComponent abilityComponent)
+            private void Execute(ref ProjectileLauncher projectileLauncher, in AbilityComponent abilityComponent)
             {
                 if (projectileLauncher.LastLaunchTime + projectileLauncher.LaunchInterval <= CurrentElapsedTime)
                 {
@@ -97,27 +97,27 @@ namespace Survivor.Runtime.Projectiles
                     if (projectileTarget != Entity.Null)
                     {
                         // Launch the projectile
-                        var projectileInstance = EcbParallel.Instantiate(chunkIndex, projectileLauncher.ProjectilePrefab);
+                        var projectileInstance = Ecb.Instantiate(projectileLauncher.ProjectilePrefab);
                         if (isEnemy)
                         {
-                            EcbParallel.AddComponent<DamagesToPlayer>(chunkIndex, projectileInstance);
+                            Ecb.AddComponent<DamagesToPlayer>(projectileInstance);
                         }
                         else
                         {
-                            EcbParallel.AddComponent<DamagesToEnemy>(chunkIndex, projectileInstance);
+                            Ecb.AddComponent<DamagesToEnemy>(projectileInstance);
                         }
 
                         // TODO: add this offset in a settings or as a constant.
                         float3 projectileInitialPosition = abilityOwnerLocalTransform.Position + new float3(0f, 0.5f, 0f);
                         float scale = LocalTransformLookup[projectileLauncher.ProjectilePrefab].Scale;
-                        EcbParallel.SetComponent(chunkIndex, projectileInstance, new LocalTransform()
+                        Ecb.SetComponent(projectileInstance, new LocalTransform()
                         {
                             Position = projectileInitialPosition,
                             Rotation = abilityOwnerLocalTransform.Rotation,
                             Scale = scale
                         });
 
-                        EcbParallel.SetComponent(chunkIndex, projectileInstance, new Projectile()
+                        Ecb.SetComponent(projectileInstance, new Projectile()
                         {
                             Velocity =  math.normalizesafe(targetPosition - abilityOwnerLocalTransform.Position, float3.zero) * projectileLauncher.InitialVelocity
                         });

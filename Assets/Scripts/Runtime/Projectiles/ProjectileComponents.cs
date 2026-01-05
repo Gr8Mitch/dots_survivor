@@ -29,7 +29,7 @@ namespace Survivor.Runtime.Projectiles
         /// </summary>
         public double LastLaunchTime;
         
-        // TODO : make it a blob so that all these settings take less space and are shared.
+        // TODO_IMPROVEMENT : make it a blob so that all these settings take less space and are shared.
         /// <summary>
         /// The damages inflicted by the projectile.
         /// </summary>

@@ -55,7 +55,7 @@ namespace Survivor.Runtime.UI
 
         private void UpdatePlayerHealthBar()
         {
-            // TODO use a MaxHealth component (just for the player entity ?) to be cleaner.
+            // TODO_IMPROVEMENT: use a MaxHealth component (just for the player entity ?) to be cleaner.
             if (_playerQuery.IsEmpty)
             {
                 return;

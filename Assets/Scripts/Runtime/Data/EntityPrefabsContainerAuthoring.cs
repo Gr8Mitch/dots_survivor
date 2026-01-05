@@ -20,7 +20,7 @@ namespace Survivor.Runtime.Data
     }
 
     /// <summary>
-    /// Authoring component designed to reference all the prefabs used in the game.
+    /// Authoring component designed to reference all the players and enemy prefabs used in the game.
     /// </summary>
     public class EntityPrefabsContainerAuthoring : MonoBehaviour
     {

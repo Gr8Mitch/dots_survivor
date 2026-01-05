@@ -18,7 +18,12 @@ namespace Survivor.Runtime.Enemy
     [BurstCompile]
     partial struct EnemySpawnSystem : ISystem
     {
-        public const int MAX_ENEMIES = 300;
+        /// <summary>
+        /// The maximum number of enemies that can be alive at the same time (well more or less, as we can have more enemies
+        /// than that if multiple spawners spawn enemies on the next frame, but this is ok).
+        /// This is limit is arbitrary to have a really smooth experience even on low-end devices. 
+        /// </summary>
+        public const int MAX_ENEMIES = 600;
         
         private EntityQuery _spawnerEntityQuery;
         private EntityQuery _enemiesQuery;

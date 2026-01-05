@@ -12,6 +12,8 @@ namespace Survivor.Runtime.Character
         public static readonly HitData NULL = new HitData(Entity.Null);
         
         public readonly Entity Entity;
+        
+        // TODO_IMPROVEMENT: should we keep RigidBodyIndex, ColliderKey and Position? It does not seem to be read anywhere (for now).
         public readonly int RigidBodyIndex;
         /// <summary>
         /// Hit collider key
@@ -59,7 +61,7 @@ namespace Survivor.Runtime.Character
         public HitData GroundHitData;
         public bool IsGrounded;
         
-        // TODO: move this somewhere else?
+        // TODO_IMPROVEMENT: do we really need this? And/or shoud we move this somewhere else?
         public float3 LastGroundPosition;
         
         /// <summary>

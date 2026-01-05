@@ -4,6 +4,10 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Entities;
     using Survivor.Runtime.Character;
     
+    /// <summary>
+    /// Destroys entities with a <see cref="PendingDestruction"/> component.
+    /// Also handles the entities with a <see cref="LimitedLifetime"/> component.
+    /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     [BurstCompile]
     partial struct DeathSystem : ISystem

@@ -1,10 +1,9 @@
-using Unity.Collections;
-
 namespace Survivor.Runtime.Player
 {
     using Unity.Mathematics;
     using Unity.Burst;
     using Unity.Entities;
+    using Unity.Collections;
     using Survivor.Runtime.Controller;
     using Survivor.Runtime.Character;
     using Survivor.Runtime.Player.Inputs;
@@ -37,7 +36,6 @@ namespace Survivor.Runtime.Player
                 PlayerInputs = SystemAPI.GetSingleton<PlayerInputs>()
             };
             job.Schedule(_playerCharacterControllerQuery);
-            //job.Run();
         }
 
         [BurstCompile]
@@ -46,12 +44,12 @@ namespace Survivor.Runtime.Player
             [ReadOnly]
             public PlayerInputs PlayerInputs;
             
-            public void Execute(ref CharacterController characterController)
+            private void Execute(ref CharacterController characterController)
             {
-                // TODO: smooth it somehow?
+                // TODO_IMPROVEMENT: smooth it somehow?
                 characterController.Movement = new float3(PlayerInputs.movement.x, 0.0f, PlayerInputs.movement.y);
                 
-                // TODO: when the camera will be able to rotate, use the rotation of the camera to compute the final movement.
+                // If the camera is ever able to rotate, use the rotation of the camera to compute the final movement.
             }
         }
     }

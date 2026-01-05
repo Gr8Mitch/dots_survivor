@@ -10,7 +10,7 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Burst.Intrinsics;
 
     /// <summary>
-    /// Contains all the damages dealt to entities.
+    /// A singleton that contains all the damages dealt to entities.
     /// </summary>
     public struct DamagesContainer : IComponentData
     {
@@ -33,6 +33,9 @@ namespace Survivor.Runtime.Lifecycle
         }
     }
 
+    /// <summary>
+    /// Contains all the data related to the entities that could potentially receive damages.
+    /// </summary>
     public readonly struct DamageReceiverData
     {
         public readonly float3 Position;
@@ -157,8 +160,10 @@ namespace Survivor.Runtime.Lifecycle
         }
     }
     
+    // TODO_IMPROVEMENT: if the system is too close to DamageReceiversFetcherSystem, there could be a (little) sync point here.
+    // Do not hesitate to add more systems in between.
     /// <summary>
-    /// Computes all the damages that needs to be dealt.
+    /// Computes all the damages that needs to be dealt and stores them in the DamagesContainer singleton.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(TransformSystemGroup))]

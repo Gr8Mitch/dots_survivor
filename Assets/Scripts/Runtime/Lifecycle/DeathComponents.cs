@@ -2,7 +2,7 @@ namespace Survivor.Runtime.Lifecycle
 {
     using Unity.Entities;
     
-    // TODO: also add PendingDestruction to all the entities of the LinkedEntityGroup so that we can destroy the entities ?
+    // TODO_IMPROVEMENT: also add PendingDestruction to all the entities of the LinkedEntityGroup so that we can destroy the entities
     // directly through the EntityQuery? Maybe it would be much faster.
     /// <summary>
     /// A tag component to mark a entity as dead, waiting to be destroyed.

@@ -1,12 +1,11 @@
-using System;
-using Unity.Entities;
-using Unity.Transforms;
-using UnityEngine.VFX;
-
 namespace Survivor.Runtime.Vfx
 {
     using UnityEngine;
     using UnityEngine.AddressableAssets;
+    using System;
+    using Unity.Entities;
+    using Unity.Transforms;
+    using UnityEngine.VFX;
 
     // TODO: do a specific drawer and enforce its uniqueness.
     /// <summary>

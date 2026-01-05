@@ -7,6 +7,10 @@ namespace Survivor.Runtime.Character
     using Unity.Collections;
     using UnityEngine.Serialization;
 
+    /// <summary>
+    /// Contain most of the settings of the character for the character controller.
+    /// Meant to be blobified.
+    /// </summary>
     public struct CharacterSettings
     {
         /// <summary>

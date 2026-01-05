@@ -3,8 +3,13 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Entities;
     using UnityEngine;
     
+    /// <summary>
+    /// An authoring component to create anything that deals damages (including the enemies dealing damages to the player
+    /// when touching it).
+    /// </summary>
     class DamageDealerAuthoring : MonoBehaviour
     {
+        // TODO_EDITOR: display only the relevant data according to the DamageType.
         public ushort Damages;
         [Tooltip("If true, the damages will be applied to the player. Otherwise, to the enemies.")]
         public bool DamagePlayer = false;

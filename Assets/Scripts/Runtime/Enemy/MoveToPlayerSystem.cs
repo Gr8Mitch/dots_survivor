@@ -10,7 +10,7 @@ namespace Survivor.Runtime.Enemy
     using Survivor.Runtime.Controller;
     
     /// <summary>
-    /// A system that makes the enemies move towards the player.
+    /// A really basic system that makes the enemies move towards the player.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [BurstCompile]

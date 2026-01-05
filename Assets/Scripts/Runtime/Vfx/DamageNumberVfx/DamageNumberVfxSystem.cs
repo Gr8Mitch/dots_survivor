@@ -13,13 +13,16 @@ namespace Survivor.Runtime.Vfx
 
     public struct DamageNumberVfx : IComponentData
     {
+        /// <summary>
+        /// The elapsed time (seconds) when the vfx was created.
+        /// </summary>
         public double CreationElaspedTime;
     }
     
-    // TODO: It would probably be better to do most of the logic in the shaders. But it is probably good enough for now, 
+    // TODO_IMPROVEMENT: It would probably be better to do most of the logic in the shaders. But it is probably good enough for now, 
     // as the current performances of all of this are quite good.
-    // TODO: add color and change alpha over time ?
-    // TODO: move it to the initialization group to prevent a sync point in EndSimulationEntityCommandBufferSystem ?
+    // TODO_IMPROVEMENT:: add color and change alpha over time ?
+    // TODO_IMPROVEMENT:: move it to the initialization group to prevent a sync point in EndSimulationEntityCommandBufferSystem ?
     
     /// <summary>
     /// Handles the "vfx" displaying the numbers showing the damages.
@@ -97,7 +100,7 @@ namespace Survivor.Runtime.Vfx
         /// Creates the vfx entities for each dealt damages.
         /// </summary>
         [BurstCompile]
-        public struct InstantiateNumbersVfxJob : IJob
+        private struct InstantiateNumbersVfxJob : IJob
         {
             public EntityCommandBuffer Ecb;
             [ReadOnly]
@@ -168,9 +171,9 @@ namespace Survivor.Runtime.Vfx
         /// Updates the position of the vfx entities, and kills them if they are too old.
         /// </summary>
         [BurstCompile]
-        public partial struct UpdateVfxNumbers : IJobEntity
+        private partial struct UpdateVfxNumbers : IJobEntity
         {
-            // TODO: make it editable in a scriptable object or so.
+            // TODO_IMPROVEMENT: make it editable in a scriptable object or so.
             private const float VFX_LIFETIME = 1f;
             private const float VFX_SPEED = 1f;
             
@@ -179,7 +182,7 @@ namespace Survivor.Runtime.Vfx
             
             public EntityCommandBuffer Ecb;
             
-            public void Execute(Entity entity, ref LocalTransform localTransform, in DamageNumberVfx damageNumberVfx, in DynamicBuffer<Child> childrenBuffer)
+            private void Execute(Entity entity, ref LocalTransform localTransform, in DamageNumberVfx damageNumberVfx, in DynamicBuffer<Child> childrenBuffer)
             {
                 if (ElapsedTime - damageNumberVfx.CreationElaspedTime < VFX_LIFETIME)
                 {

@@ -10,7 +10,7 @@ namespace Survivor.Runtime.Enemy
     /// </summary>
     public struct EnemySpawner : IComponentData
     {
-        // TODO : add a way to spawn multiple enemies at once + multiple types of enemies.
+        // TODO_IMPROVEMENT: add a way to spawn multiple enemies at once + multiple types of enemies.
         /// <summary>
         /// The enemy type to spawn.
         /// </summary>

@@ -5,7 +5,7 @@ namespace Survivor.Runtime.Lifecycle
     using Unity.Collections;
     using Unity.Mathematics;
 
-    // TODO : also handle regen.
+    // TODO_IMPROVEMENT: also handle potential regen here.
     /// <summary>
     /// Updates the health of the entities on which damages where done.
     /// </summary>

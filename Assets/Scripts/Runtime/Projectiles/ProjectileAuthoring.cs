@@ -1,13 +1,12 @@
-using Survivor.Runtime.Lifecycle;
-
 namespace Survivor.Runtime.Projectiles
 {
     using Unity.Entities;
     using UnityEngine;
+    using Survivor.Runtime.Lifecycle;
     
     class ProjectileAuthoring : MonoBehaviour
     {
-        [Tooltip("The lifetime of the projectile in seconds. Zero or negative if infinite.")]
+        [Tooltip("The lifetime of the projectile (in seconds). Zero or negative if infinite.")]
         public float Lifetime = 20f;
         
         class ProjectileAuthoringBaker : Baker<ProjectileAuthoring>

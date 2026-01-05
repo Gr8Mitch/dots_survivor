@@ -2,7 +2,9 @@ namespace Survivor.Runtime.Ability
 {
     using Unity.Entities;
     using UnityEngine;
-
+    
+    // TODO_EDITOR: make it a specific type for the ability Id to be able to create a specific drawer and ensure its uniqueness.
+    
     /// <summary>
     /// The (character) entity that owns this ability.
     /// </summary>
@@ -32,9 +34,11 @@ namespace Survivor.Runtime.Ability
         public ushort AbilityId;
     }
     
+    /// <summary>
+    /// Contains all the abilities that can be used by the owner.
+    /// </summary>
     class OwnedAbilitiesAuthoring : MonoBehaviour
     {
-        // TODO : do a specific drawer.
         [Tooltip("The ids of the abilities that can be used by the owner")]
         public ushort[] AbilitiesIds;
         

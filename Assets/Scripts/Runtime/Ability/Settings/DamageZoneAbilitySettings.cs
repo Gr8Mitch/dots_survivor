@@ -17,9 +17,7 @@ namespace Survivor.Runtime.Ability
         [SerializeField]
         private float _zoneRadius = 10f;
         
-        /// <summary>
-        /// The cooldown in seconds between damages.
-        /// </summary>
+        [Tooltip("The cooldown (in seconds) between damages.")]
         [SerializeField]
         private float _damagesCooldown = 1f;
         

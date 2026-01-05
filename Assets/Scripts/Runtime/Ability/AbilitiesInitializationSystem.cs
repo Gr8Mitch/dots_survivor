@@ -8,6 +8,9 @@ namespace Survivor.Runtime.Ability
     using Survivor.Runtime.Lifecycle;
     using Survivor.Runtime.Vfx;
 
+    /// <summary>
+    /// Creates the ability entities from the <see cref="PendingAbility"/> components.
+    /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [BurstCompile]
     partial struct AbilitiesInitializationSystem : ISystem

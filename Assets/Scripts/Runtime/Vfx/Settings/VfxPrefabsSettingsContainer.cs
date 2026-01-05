@@ -1,9 +1,8 @@
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-
 namespace Survivor.Runtime.Vfx
 {
     using UnityEngine;
+    using UnityEngine.AddressableAssets;
+    using UnityEngine.ResourceManagement.AsyncOperations;
 
     /// <summary>
     /// Contains all the settings of all the VFX prefabs that are instantiable. 

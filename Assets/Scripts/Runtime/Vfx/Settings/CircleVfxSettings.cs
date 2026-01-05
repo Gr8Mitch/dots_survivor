@@ -1,9 +1,7 @@
-using Unity.Entities;
-using UnityEngine.VFX;
-
 namespace Survivor.Runtime.Vfx
 {
     using UnityEngine;
+    using UnityEngine.VFX;
 
     /// <summary>
     /// A vfx settings used for vfxs that appear as a circle.
@@ -24,6 +22,7 @@ namespace Survivor.Runtime.Vfx
         [SerializeField]
         private Vector3 _baseNormal = Vector3.up;
         
+        // TODO_CLEANING: do we actually need this in the end? Is there any basic ability that would need that?
         [SerializeField]
         private string _normalAttribute = "Normal";
         

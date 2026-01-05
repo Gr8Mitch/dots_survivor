@@ -12,6 +12,10 @@ namespace Survivor.Runtime.Ability
         public Entity Value;
     }
     
+    /// <summary>
+    /// Authoring component designed to reference all the abilities settings used in the game.
+    /// Each settings is transformed baked as a prefab entity.
+    /// </summary>
     public class AbilitiesContainerAuthoring : MonoBehaviour
     {
         [Tooltip("Contains all the abilities settings.")]

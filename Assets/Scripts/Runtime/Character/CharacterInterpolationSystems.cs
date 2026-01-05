@@ -9,6 +9,10 @@ namespace Survivor.Runtime.Character
     using Unity.Collections.LowLevel.Unsafe;
     using Unity.Mathematics;
 
+    /// <summary>
+    /// Contains settings for the interpolation (mostly time data from the last fixed update that should
+    /// be used in the regular update).
+    /// </summary>
     public struct CharacterInterpolationSingleton : IComponentData
     {
         /// <summary>
@@ -114,15 +118,15 @@ namespace Survivor.Runtime.Character
         {
             //state.CompleteDependency();
             var characterInterpolationSingleton =
-                SystemAPI.GetSingletonRW<CharacterInterpolationSingleton>();
-            if (characterInterpolationSingleton.ValueRO.SavedInterpolationDataElapsedTime < 0 ||
-                characterInterpolationSingleton.ValueRO.InterpolationDeltaTime == 0f)
+                SystemAPI.GetSingletonRW<CharacterInterpolationSingleton>().ValueRO;
+            if (characterInterpolationSingleton.SavedInterpolationDataElapsedTime < 0 ||
+                characterInterpolationSingleton.InterpolationDeltaTime == 0f)
             {
                 return;
             }
             
-            float timeAheadOfLastFixedUpdate = (float)(SystemAPI.Time.ElapsedTime - characterInterpolationSingleton.ValueRO.SavedInterpolationDataElapsedTime);
-            float normalizedTimeAhead = math.clamp(timeAheadOfLastFixedUpdate / characterInterpolationSingleton.ValueRO.InterpolationDeltaTime, 0f, 1f);
+            float timeAheadOfLastFixedUpdate = (float)(SystemAPI.Time.ElapsedTime - characterInterpolationSingleton.SavedInterpolationDataElapsedTime);
+            float normalizedTimeAhead = math.clamp(timeAheadOfLastFixedUpdate / characterInterpolationSingleton.InterpolationDeltaTime, 0f, 1f);
             
             new InterpolateCharactersJob()
             {

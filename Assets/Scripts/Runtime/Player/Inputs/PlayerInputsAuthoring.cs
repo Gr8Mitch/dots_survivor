@@ -9,6 +9,9 @@ namespace Survivor.Runtime.Player.Inputs
     /// </summary>
     public struct PlayerInputs : IComponentData
     {
+        /// <summary>
+        /// The 2D movement vector computed from the inputs.
+        /// </summary>
         public float2 movement; 
     }
 

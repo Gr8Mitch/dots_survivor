@@ -4,6 +4,8 @@ namespace Survivor.Runtime.Character
     using UnityEngine.Serialization;
     using Unity.Entities;
 
+    // TODO_EDITOR: make a specific type for the EnemyType to have a specific drawer and ensure its uniqueness.
+    
     /// <summary>
     /// A component to identify the enemy characters.
     /// </summary>

@@ -4,7 +4,8 @@ namespace Survivor.Runtime.Vfx
     using UnityEngine;
 
     /// <summary>
-    /// Contains the prefabs linked to the vfxs
+    /// Contains the prefabs linked to the vfxs.
+    /// !!! It has to be on a separate subscene, otherwise we can't use the baked RenderMeshArray !!!
     /// </summary>
     public struct DamageNumberVfxPrefabContainer : IComponentData
     {

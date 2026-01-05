@@ -19,6 +19,7 @@ namespace Survivor.Runtime.Controller
     
     /// <summary>
     /// Handles the character movements, including the ground detection.
+    /// It needs fixed update as it involves physics.
     /// </summary>
     [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
     [BurstCompile]
@@ -82,7 +83,7 @@ namespace Survivor.Runtime.Controller
         public void OnStartRunning(ref SystemState state)
         {
             // We have to create it here to make sure that we already have the prefabs container instantiated.
-            // It is not symetric with the OnDestroy, but well it is good enough for the scope of the project.
+            // It is not symmetric with the OnDestroy, but well it is good enough for the scope of the project.
             if (!SystemAPI.HasSingleton<CastCollidersContainer>())
             {
                 CreateCollidersContainerSingleton(ref state);
@@ -285,6 +286,12 @@ namespace Survivor.Runtime.Controller
         }
     }
 
+    /// <summary>
+    /// Handles the rotation of the character to face the direction of the movement vector.
+    /// We could have also update the rotation in the fixed update , but we needed to update it in the regular update
+    /// to make it smooth anyway. If we did it in the fixed update, the resulting position of the character would have
+    /// been different, especially if we had multiple fixed update per frame, but as of now, this is not really relevant.
+    /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(FixedStepSimulationSystemGroup))]
     [UpdateBefore(typeof(TransformSystemGroup))]

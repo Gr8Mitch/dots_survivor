@@ -9,7 +9,7 @@ namespace Survivor.Runtime.Controller
     /// </summary>
     public struct CharacterController : IComponentData
     {
-        // TODO : for now, it takes just the raw inputs for player. We will probably need to smooth them out later.
+        // TODO_IMPROVEMENT: for now, it takes just the raw inputs for player. We will probably need to smooth them out later.
         public float3 Movement; 
     }
     

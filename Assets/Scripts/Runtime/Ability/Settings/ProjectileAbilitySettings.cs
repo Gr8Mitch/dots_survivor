@@ -23,11 +23,6 @@ namespace Survivor.Runtime.Ability
         [Tooltip("The minimum time interval between two projectiles launches (in seconds).")]
         [SerializeField]
         private float _launchInterval = 1f;
-
-        // TODO: make a generic system that destroys entities after a given time.
-        [Tooltip("The maximum lifetime of the projectile (in seconds).")]
-        [SerializeField]
-        private float _lifetime = 10f;
         
         [Tooltip( "The initial velocity of the projectile (in m/s)." )]
         [SerializeField]

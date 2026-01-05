@@ -47,7 +47,7 @@ namespace Survivor.Runtime.Camera
             
             public ComponentLookup<LocalToWorld> LocalToWorldLookup;
 
-            public void Execute(Entity cameraTargetEntity, in CameraTarget cameraTarget)
+            private void Execute(Entity cameraTargetEntity, in CameraTarget cameraTarget)
             {
                 // Can't access directly in the execute signature, or I should have access it with a "ref". Would it be better?
                 var localToWorld = LocalToWorldLookup[cameraTargetEntity];

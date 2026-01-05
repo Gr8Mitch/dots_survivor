@@ -5,6 +5,9 @@ namespace Survivor.Runtime.Player
     using Unity.Burst;
     using Unity.Transforms;
     
+    /// <summary>
+    /// Spawns the player avatar at the spawner's location.
+    /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     [BurstCompile]
     public partial struct PlayerAvatarSpawnSystem : ISystem, ISystemStartStop
@@ -13,7 +16,7 @@ namespace Survivor.Runtime.Player
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<AvatarPrefabContainer>();
-            // TODO: for now, we only have one. Maybe it would be interesting to have multiple spawners and choose one
+            // TODO_IMPROVEMENT: for now, we only have one. Maybe it would be interesting to have multiple spawners and choose one
             // randomly ?
             state.RequireForUpdate<PlayerAvatarSpawner>();
         }
@@ -23,8 +26,8 @@ namespace Survivor.Runtime.Player
         {
             SpawnPlayerAvatar(ref state);
             
-            // TODO: Add a mechanism to have a component existing only when the avatar is not spawned, so that
-            // we can use a related query to not update the system when the avatar is indeed spawned.
+            // TODO_IMPROVEMENT: Add a mechanism to have a component existing only when the avatar is not spawned, so that
+            // we can use a related query to not update the system when the avatar is indeed spawned (although this is clearly not prioritary)
         }
 
         public void OnStopRunning(ref SystemState state) { }

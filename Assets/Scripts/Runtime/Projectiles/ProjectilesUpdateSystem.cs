@@ -32,17 +32,17 @@ namespace Survivor.Runtime.Projectiles
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            // TODO: is it worth parallelizing this job?
-            var parallelEcb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+            // Not worth parallelizing this job.
+            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
 
             new UpdateProjectilesJob()
             {
                 PhysicsWorld = physicsWorld,
-                EcbParallel = parallelEcb,
+                Ecb = ecb,
                 DeltaTime = SystemAPI.Time.DeltaTime,
                 CastToEnvironmentCollisionFilter = _castToEnvironmentCollisionFilter
-            }.ScheduleParallel();
+            }.Schedule();
         }
 
         [BurstCompile]
@@ -51,17 +51,16 @@ namespace Survivor.Runtime.Projectiles
             [ReadOnly]
             public PhysicsWorld PhysicsWorld;
             
-            public EntityCommandBuffer.ParallelWriter EcbParallel;
+            public EntityCommandBuffer Ecb;
             
             public float DeltaTime;
             
             public CollisionFilter CastToEnvironmentCollisionFilter;
             
-            private void Execute([ChunkIndexInQuery] int chunkIndex, Entity entity, ref LocalTransform localTransform, in Projectile projectile)
+            private void Execute(Entity entity, ref LocalTransform localTransform, in Projectile projectile)
             {
                 float3 newPosition = localTransform.Position + projectile.Velocity * DeltaTime;
                 
-                // TODO: do the same thing for a potential target?
                 // Do a raycast to see if they hit something from the environment
                 RaycastInput raycastInput = new RaycastInput()
                 {
@@ -73,7 +72,7 @@ namespace Survivor.Runtime.Projectiles
                 if (hasCollided)
                 {
                     // The projectile will be destroyed in the next frame.
-                    EcbParallel.AddComponent<PendingDestruction>(chunkIndex, entity);
+                    Ecb.AddComponent<PendingDestruction>(entity);
                 }
                 else
                 {

@@ -1,5 +1,3 @@
-using Unity.Mathematics;
-
 namespace Survivor.Runtime.Vfx
 {
     using Unity.Entities;

@@ -20,7 +20,7 @@ namespace Survivor.Runtime.Player.Inputs
         {
             base.OnCreate();
             
-            // We could have also loaded it from the addressables, but this is much simpler this way regarding the scope of the project.
+            // TODO_IMPROVEMENT: use the addressables instead, although this is not really prioritary.
             _actionAsset = Resources.Load<InputActionAsset>(InputActionName);
             if (_actionAsset == null)
             {

@@ -18,7 +18,7 @@ namespace Survivor.Runtime.Ability
         [SerializeField] 
         private VfxPrefabSettings _vfxPrefabSettings;
         
-        // TODO: make it not visible in the inspector if _vfxPrefabSettings is null.
+        // TODO_EDITOR: make it not visible in the inspector if _vfxPrefabSettings is null.
         [Tooltip("True if the VFX must replicate the position of the owner character.")]
         [SerializeField]
         private bool _replicateCharacterPosition = true;
