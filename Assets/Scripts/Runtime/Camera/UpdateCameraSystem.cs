@@ -36,7 +36,9 @@ namespace Survivor.Runtime.Camera
             new UpdateCameraTransformJob()
             {
                 CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>(),
-                LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(false)
+                // We need to update the LocalTransform and not the LocalToWorld, otherwise the LocalTransform will
+                // stay as the default value even though LocalToWorld is updated.
+                LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false)
             }.Schedule(_cameraTargetQuery);
         }
 
@@ -45,18 +47,17 @@ namespace Survivor.Runtime.Camera
         {
             public Entity CameraEntity;
             
-            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
+            public ComponentLookup<LocalTransform> LocalTransformLookup;
 
             private void Execute(Entity cameraTargetEntity, in CameraTarget cameraTarget)
             {
                 // Can't access directly in the execute signature, or I should have access it with a "ref". Would it be better?
-                var localToWorld = LocalToWorldLookup[cameraTargetEntity];
-                LocalToWorldLookup[CameraEntity] = new LocalToWorld()
+                var localToWorld = LocalTransformLookup[cameraTargetEntity];
+                LocalTransformLookup[CameraEntity] = new LocalTransform()
                 {
-                    Value = float4x4.TRS(
-                        localToWorld.Position + cameraTarget.OffsetToTarget,
-                        cameraTarget.Rotation,
-                        new float3(1f))
+                    Position = localToWorld.Position + cameraTarget.OffsetToTarget,
+                    Rotation = cameraTarget.Rotation,
+                    Scale = 1f
                 };
             }
         }
