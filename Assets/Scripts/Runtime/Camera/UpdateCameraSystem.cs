@@ -36,9 +36,10 @@ namespace Survivor.Runtime.Camera
             new UpdateCameraTransformJob()
             {
                 CameraEntity = SystemAPI.GetSingletonEntity<CameraEntity>(),
-                // We need to update the LocalTransform and not the LocalToWorld, otherwise the LocalTransform will
-                // stay as the default value even though LocalToWorld is updated.
-                LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false)
+                // We also need to update the LocalTransform and not just the LocalToWorld,
+                // or the LocalTransform will never be computed from the LocalToWorld is used to compute the camera position.
+                LocalTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false),
+                LocalToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(false)
             }.Schedule(_cameraTargetQuery);
         }
 
@@ -48,14 +49,23 @@ namespace Survivor.Runtime.Camera
             public Entity CameraEntity;
             
             public ComponentLookup<LocalTransform> LocalTransformLookup;
+            
+            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
 
             private void Execute(Entity cameraTargetEntity, in CameraTarget cameraTarget)
             {
-                // Can't access directly in the execute signature, or I should have access it with a "ref". Would it be better?
-                var localToWorld = LocalTransformLookup[cameraTargetEntity];
+                // Can't access directly in the execute signature (because of the lookups), or I should access it with a "ref". Would it be better?
+                var localToWorld = LocalToWorldLookup[cameraTargetEntity];
+                var newPosition = localToWorld.Position + cameraTarget.OffsetToTarget;
+                LocalToWorldLookup[CameraEntity] = new LocalToWorld()
+                {
+                    Value = float4x4.TRS(newPosition, cameraTarget.Rotation,
+                        new float3(1f))
+                };
+                
                 LocalTransformLookup[CameraEntity] = new LocalTransform()
                 {
-                    Position = localToWorld.Position + cameraTarget.OffsetToTarget,
+                    Position = newPosition, 
                     Rotation = cameraTarget.Rotation,
                     Scale = 1f
                 };
