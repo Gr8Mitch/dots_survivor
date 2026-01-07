@@ -156,13 +156,18 @@ namespace Survivor.Runtime.Controller
             float castLength = settings.GroundSnappingDistance;
             float3 castDirection = -groundUp;
             
-            if (!GetColliderData(in characterPhysicsCollider, out _, out float colliderHalfHeight))
+            if (!GetColliderData(in characterPhysicsCollider, out float radius, out float colliderHalfHeight))
             {
                 return;
             }
-            
-            float3 castStart = characterPosition - (castLength + colliderHalfHeight) * castDirection;
-            float3 castEnd = characterPosition + (castLength + colliderHalfHeight) * castDirection;
+            // Add a little offset towards the character to handle low obstacles.
+            // It kind of enables us to have the hits on the front of the collider when we move (that we have
+            // by default when doing a collider cast) and make the character go up and not bump into low front obstacles.
+            float forwardOffset = radius;
+            float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
+            float totalCastLength = 2 * colliderHalfHeight + castLength;
+            float3 castStart = characterPosition + movementDirection * forwardOffset - colliderHalfHeight * castDirection;
+            float3 castEnd = castStart + totalCastLength * castDirection;
             
             raycastHits.Clear();
             RaycastInput colliderCastInput = new RaycastInput()
@@ -197,7 +202,7 @@ namespace Survivor.Runtime.Controller
             if (hasCollided)
             {
                 // Snap on the ground.
-                float distanceToGround = closestHit.Fraction * 2 * (castLength + colliderHalfHeight) - (castLength + colliderHalfHeight);
+                float distanceToGround = closestHit.Fraction * totalCastLength - colliderHalfHeight - math.dot(movementDirection * forwardOffset, groundUp);
                 characterPosition += (CharacterControllerUtilities.GROUND_SNAP_OFFSET - distanceToGround) * groundUp;
             }
             

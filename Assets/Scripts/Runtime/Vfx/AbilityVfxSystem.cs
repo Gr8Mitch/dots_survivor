@@ -43,7 +43,11 @@ namespace Survivor.Runtime.Vfx
                 if (characterAbilityVfxComponent.AlignWithCharacterGround)
                 {
                     var characterBodyData = CharacterBodyDataLookup[characterAbilityVfxComponent.CharacterEntity];
-                    localTransform.Rotation = quaternion.LookRotation(localTransform.Forward(), characterBodyData.GroundHitData.Normal);
+                    if (characterBodyData.IsGrounded)
+                    {
+                        localTransform.Rotation = quaternion.LookRotation(localTransform.Forward(),
+                            characterBodyData.GroundHitData.Normal);
+                    }
                 }
                 
                 if (characterAbilityVfxComponent.ReplicateCharacterPosition)
