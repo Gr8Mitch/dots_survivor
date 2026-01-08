@@ -58,6 +58,29 @@ namespace Survivor.Runtime.Character
     {
         public BlobAssetReference<CharacterSettings> Settings;
     }
+
+    public struct CastColliderData
+    {
+        public BlobAssetReference<Unity.Physics.Collider> GroundCastCollider;
+        public BlobAssetReference<Unity.Physics.Collider> ObstacleCastCollider;
+
+        public void Dispose()
+        {
+            GroundCastCollider.Dispose();
+            ObstacleCastCollider.Dispose();
+        }
+        
+        public bool IsCreated => GroundCastCollider.IsCreated && ObstacleCastCollider.IsCreated;
+    }
+    
+    /// <summary>
+    /// Caches the colliders used to do collider casts.
+    /// No need to dispose here as something else is responsible for that.
+    /// </summary>
+    public struct CharacterCastColliders : IComponentData
+    {
+        public CastColliderData CastColliderData;
+    }
     
     public class CharacterComponentAuthoring : MonoBehaviour
     {
@@ -113,6 +136,8 @@ namespace Survivor.Runtime.Character
                 
                 builder.Dispose();
 
+                AddComponent<CharacterCastColliders>(entity);
+                
                 // Register the Blob Asset to the Baker for de-duplication and reverting.
                 AddBlobAsset<CharacterSettings>(ref blobReference, out var hash);
                 

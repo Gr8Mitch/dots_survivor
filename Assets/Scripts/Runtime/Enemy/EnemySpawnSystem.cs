@@ -1,3 +1,5 @@
+using Survivor.Runtime.Controller;
+
 namespace Survivor.Runtime.Enemy
 {
     using Unity.Transforms;
@@ -35,6 +37,7 @@ namespace Survivor.Runtime.Enemy
             _enemiesQuery = SystemAPI.QueryBuilder().WithAll<EnemyCharacterComponent>().Build();
             state.RequireForUpdate(_spawnerEntityQuery);
             state.RequireForUpdate<EnemyPrefabsContainer>();
+            state.RequireForUpdate<CastCollidersContainer>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -55,6 +58,7 @@ namespace Survivor.Runtime.Enemy
             {
                 EnemiesPrefabs = enemiesPrefabs,
                 EnemyComponentLookup = enemyComponentLookup,
+                CastCollidersContainer = SystemAPI.GetSingleton<CastCollidersContainer>(),
                 CurrentTime = SystemAPI.Time.ElapsedTime,
                 EcbParallel = ecbParallel
             }.ScheduleParallel(_spawnerEntityQuery);
@@ -68,6 +72,9 @@ namespace Survivor.Runtime.Enemy
 
             [ReadOnly]
             public ComponentLookup<EnemyCharacterComponent> EnemyComponentLookup;
+
+            [ReadOnly]
+            public CastCollidersContainer CastCollidersContainer;
             
             public double CurrentTime;
             
@@ -122,6 +129,16 @@ namespace Survivor.Runtime.Enemy
                             Position = spawnPosition,
                             Rotation = spawnRotation,
                             Scale = 1.0f
+                        });
+
+                        var colliderData = CastCollidersContainer.GetColliderData(enemySpawner.EnemyTypeId);
+                        EcbParallel.SetComponent(chunkIndex, enemyInstanceEntity, new CharacterCastColliders()
+                        {
+                            CastColliderData = new CastColliderData()
+                            {
+                                GroundCastCollider = colliderData.GroundCastCollider,
+                                ObstacleCastCollider = colliderData.ObstacleCastCollider
+                            }
                         });
                     }
                     else

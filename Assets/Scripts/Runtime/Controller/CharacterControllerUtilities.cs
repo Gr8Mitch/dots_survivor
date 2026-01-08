@@ -9,18 +9,6 @@ namespace Survivor.Runtime.Controller
     using CapsuleCollider = Unity.Physics.CapsuleCollider;
     using Unity.Entities;
     
-    public struct CastColliderData
-    {
-        public BlobAssetReference<Collider> GroundCastCollider;
-        public BlobAssetReference<Collider> ObstacleCastCollider;
-
-        public void Dispose()
-        {
-            GroundCastCollider.Dispose();
-            ObstacleCastCollider.Dispose();
-        }
-    }
-    
     /// <summary>
     /// Contains all the colliders used for the ColliderCasts (with the relevant CollisionFilter)
     /// </summary>

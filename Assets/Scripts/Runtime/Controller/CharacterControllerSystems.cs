@@ -70,7 +70,6 @@ namespace Survivor.Runtime.Controller
             state.RequireForUpdate<AvatarPrefabContainer>();
 
             _characterControllersQuery = SystemAPI.QueryBuilder().WithAll<CharacterController>().Build();
-            state.RequireAnyForUpdate(_characterControllersQuery);
 
             _castToEnvironmentCollisionFilter = PhysicsUtilities.BuildFilterForRaycast(LayerConstants.ENVIRONMENT_LAYER);
             _castToObstacleCollisionFilter = PhysicsUtilities.BuildFilterForRaycast(LayerConstants.ENVIRONMENT_LAYER, LayerConstants.ENEMY_LAYER, LayerConstants.PLAYER_LAYER);
@@ -88,6 +87,8 @@ namespace Survivor.Runtime.Controller
             {
                 CreateCollidersContainerSingleton(ref state);
             }
+            
+            state.RequireForUpdate(_characterControllersQuery);
         }
 
         public void OnStopRunning(ref SystemState state) { }
@@ -115,8 +116,6 @@ namespace Survivor.Runtime.Controller
                 DeltaTime = SystemAPI.Time.DeltaTime,
                 ElapsedTime = SystemAPI.Time.ElapsedTime,
                 TransientData = _transientData,
-                CastCollidersContainer = SystemAPI.GetSingleton<CastCollidersContainer>(),
-                EnemyCharacterComponentLookup = SystemAPI.GetComponentLookup<EnemyCharacterComponent>(true)
             }.ScheduleParallel();
         }
 
@@ -180,12 +179,6 @@ namespace Survivor.Runtime.Controller
             /// </summary>
             [NativeDisableParallelForRestriction]
             public ControllerTransientData TransientData;
-
-            [ReadOnly]
-            public CastCollidersContainer CastCollidersContainer;
-            
-            [ReadOnly]
-            public ComponentLookup<EnemyCharacterComponent> EnemyCharacterComponentLookup;
             
             public bool OnChunkBegin(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
@@ -202,16 +195,14 @@ namespace Survivor.Runtime.Controller
                 ref CharacterBodyData characterBodyData, 
                 in CharacterController characterController,
                 in PhysicsCollider characterPhysicsCollider,
-                in CharacterComponent characterComponent)
+                in CharacterComponent characterComponent,
+                in CharacterCastColliders characterCastColliders)
             {
                 ref CharacterSettings settings = ref characterComponent.Settings.Value;
                 bool isInterpolating = settings.UseGroundInterpolation 
                                        && (ElapsedTime - characterBodyData.LastGroundCastTime) < settings.GroundInterpolationDuration;
-        
-                bool isEnemy =
-                    EnemyCharacterComponentLookup.TryGetComponent(characterEntity, out var enemyCharacterComponent);
-                // TODO: add these data in a component to avoid the random access?
-                var castColliderData = CastCollidersContainer.GetColliderData(isEnemy ? enemyCharacterComponent.EnemyTypeId : null);
+                
+                var castColliderData = characterCastColliders.CastColliderData;
                 
                 if (isInterpolating)
                 {

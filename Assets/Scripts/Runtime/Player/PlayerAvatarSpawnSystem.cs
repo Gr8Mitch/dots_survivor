@@ -1,3 +1,6 @@
+using Survivor.Runtime.Character;
+using Survivor.Runtime.Controller;
+
 namespace Survivor.Runtime.Player
 {
     using Unity.Entities;
@@ -19,6 +22,7 @@ namespace Survivor.Runtime.Player
             // TODO_IMPROVEMENT: for now, we only have one. Maybe it would be interesting to have multiple spawners and choose one
             // randomly ?
             state.RequireForUpdate<PlayerAvatarSpawner>();
+            state.RequireForUpdate<CastCollidersContainer>();
         }
         
         [BurstCompile]
@@ -36,12 +40,24 @@ namespace Survivor.Runtime.Player
         {
             var avatarPrefabContainer = SystemAPI.GetSingleton<AvatarPrefabContainer>();
             var avatarSpawnerEntity = SystemAPI.GetSingletonEntity<PlayerAvatarSpawner>();
+            var castCollidersContainer = SystemAPI.GetSingleton<CastCollidersContainer>();
             var avatarEntity = state.WorldUnmanaged.EntityManager.Instantiate(avatarPrefabContainer.PlayerAvatarPrefab);
             var localTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(false);
             var avatarSpawnTransform = localTransformLookup[avatarSpawnerEntity];
 
             // No need to add an offset, the anchor of the characters are at the ground level.
             localTransformLookup[avatarEntity] = avatarSpawnTransform;
+            
+            // Set the cast colliders.
+            var colliderData = castCollidersContainer.PlayerCastColliderData;
+            SystemAPI.SetComponent(avatarEntity, new CharacterCastColliders()
+            {
+                CastColliderData = new CastColliderData()
+                {
+                    GroundCastCollider = colliderData.GroundCastCollider,
+                    ObstacleCastCollider = colliderData.ObstacleCastCollider
+                }
+            });
         }
     }
 }
