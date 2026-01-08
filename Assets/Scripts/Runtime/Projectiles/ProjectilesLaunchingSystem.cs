@@ -61,7 +61,8 @@ namespace Survivor.Runtime.Projectiles
             
             private void Execute(ref ProjectileLauncher projectileLauncher, in AbilityComponent abilityComponent)
             {
-                if (projectileLauncher.LastLaunchTime + projectileLauncher.LaunchInterval <= CurrentElapsedTime)
+                ref var settings = ref projectileLauncher.Settings.Value;
+                if (projectileLauncher.LastLaunchTime + settings.LaunchInterval <= CurrentElapsedTime)
                 {
                     // A projectile can be launched if a suitable target is found.
                     Entity projectileTarget = Entity.Null;
@@ -72,7 +73,7 @@ namespace Survivor.Runtime.Projectiles
                     {
                         // This is an enemy, we only need to check the player.
                         float sqrDistance = math.distancesq(DamageReceiversContainer.PlayerDamageReceiver.Value.Position, abilityOwnerLocalTransform.Position);
-                        if (sqrDistance <= projectileLauncher.MinimalSqrDistanceToTarget)
+                        if (sqrDistance <= settings.MinimalSqrDistanceToTarget)
                         {
                             projectileTarget = DamageReceiversContainer.PlayerDamageReceiver.Value.Entity;
                             targetPosition = DamageReceiversContainer.PlayerDamageReceiver.Value.Position;
@@ -85,7 +86,7 @@ namespace Survivor.Runtime.Projectiles
                         foreach (var enemyDamageReceiver in DamageReceiversContainer.EnemyDamageReceivers)
                         {
                             float sqrDistance = math.distancesq(enemyDamageReceiver.Position, abilityOwnerLocalTransform.Position);
-                            if (sqrDistance <= projectileLauncher.MinimalSqrDistanceToTarget && sqrDistance < smallestSqrDistance)
+                            if (sqrDistance <= settings.MinimalSqrDistanceToTarget && sqrDistance < smallestSqrDistance)
                             {
                                 smallestSqrDistance = sqrDistance;
                                 projectileTarget = enemyDamageReceiver.Entity;
@@ -119,7 +120,12 @@ namespace Survivor.Runtime.Projectiles
 
                         Ecb.SetComponent(projectileInstance, new Projectile()
                         {
-                            Velocity =  math.normalizesafe(targetPosition - abilityOwnerLocalTransform.Position, float3.zero) * projectileLauncher.InitialVelocity
+                            Velocity =  math.normalizesafe(targetPosition - abilityOwnerLocalTransform.Position, float3.zero) * settings.InitialVelocity
+                        });
+
+                        Ecb.AddComponent(projectileInstance, new DamageDealer()
+                        {
+                            Damages = settings.Damages
                         });
                         
                         projectileLauncher.LastLaunchTime = CurrentElapsedTime;

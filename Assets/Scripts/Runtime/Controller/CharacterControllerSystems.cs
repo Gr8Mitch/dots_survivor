@@ -101,7 +101,7 @@ namespace Survivor.Runtime.Controller
                 state.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<CastCollidersContainer>());
             }
             
-            // No need to dispose the transient data as it is allocated with a Temp allocator by the chunks.
+            // No need to dispose of the transient data as it is allocated with a Temp allocator by the chunks.
         }
         
         [BurstCompile]

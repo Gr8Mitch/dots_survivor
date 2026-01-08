@@ -1,3 +1,5 @@
+using Unity.Collections;
+
 namespace Survivor.Runtime.Ability
 {
     using UnityEngine;
@@ -48,14 +50,27 @@ namespace Survivor.Runtime.Ability
             // when launching.
             Entity projectilePrefab = baker.GetEntity(_projectilePrefab, TransformUsageFlags.Dynamic);
             
+            // Create the blob asset
+            var builder = new BlobBuilder(Allocator.Temp);
+            ref ProjectileLauncherSettings characterSettings = ref builder.ConstructRoot<ProjectileLauncherSettings>();
+            characterSettings.InitialVelocity = _initialVelocity;
+            characterSettings.LaunchInterval = _launchInterval;
+            characterSettings.MinimalSqrDistanceToTarget = _minimalDistanceToTarget * _minimalDistanceToTarget;
+            characterSettings.Damages = _damages;
+
+            var blobReference =
+                builder.CreateBlobAssetReference<ProjectileLauncherSettings>(Allocator.Persistent);
+                
+            builder.Dispose();
+                
+            // Register the Blob Asset to the Baker for de-duplication and reverting.
+            baker.AddBlobAsset<ProjectileLauncherSettings>(ref blobReference, out var hash);
+            
             baker.AddComponent(abilityEntity, new ProjectileLauncher()
             {
                 ProjectilePrefab = projectilePrefab,
                 LastLaunchTime = 0.0,
-                Damages = _damages,
-                InitialVelocity = _initialVelocity,
-                LaunchInterval = _launchInterval,
-                MinimalSqrDistanceToTarget = _minimalDistanceToTarget * _minimalDistanceToTarget
+                Settings = blobReference
             });
         }
     }

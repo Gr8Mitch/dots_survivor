@@ -28,8 +28,16 @@ namespace Survivor.Runtime.Projectiles
         /// The elapsed time corresponding to the last projectile launch (seconds)
         /// </summary>
         public double LastLaunchTime;
-        
-        // TODO_IMPROVEMENT : make it a blob so that all these settings take less space and are shared.
+
+        public BlobAssetReference<ProjectileLauncherSettings> Settings;
+    }
+
+    /// <summary>
+    /// Contains all the settings for the projectile launcher.
+    /// Meant to be blobified.
+    /// </summary>
+    public struct ProjectileLauncherSettings
+    {
         /// <summary>
         /// The damages inflicted by the projectile.
         /// </summary>
