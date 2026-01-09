@@ -108,7 +108,7 @@ namespace Survivor.Runtime.Projectiles
                             Ecb.AddComponent<DamagesToEnemy>(projectileInstance);
                         }
 
-                        // TODO: add this offset in a settings or as a constant.
+                        // TODO_IMPROVEMENT: add this offset in a settings or as a constant.
                         float3 projectileInitialPosition = abilityOwnerLocalTransform.Position + new float3(0f, 0.5f, 0f);
                         float scale = LocalTransformLookup[projectileLauncher.ProjectilePrefab].Scale;
                         Ecb.SetComponent(projectileInstance, new LocalTransform()

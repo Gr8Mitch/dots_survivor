@@ -101,7 +101,7 @@ namespace Survivor.Runtime.Enemy
                     Entity enemyPrefab = Entity.Null;
                     foreach (var entry in EnemiesPrefabs)
                     {
-                        // TODO: make a hashmap or equivalent at initialzation time to find the prefab faster.
+                        // TODO_IMPROVEMENT: make a hashmap or equivalent at initialization time to find the prefab faster.
                         if (EnemyComponentLookup[entry.EnemyPrefab].EnemyTypeId == enemySpawner.EnemyTypeId)
                         {
                             enemyPrefab = entry.EnemyPrefab;

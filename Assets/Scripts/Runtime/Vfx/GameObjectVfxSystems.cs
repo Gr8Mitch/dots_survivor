@@ -11,7 +11,7 @@ namespace Survivor.Runtime.Vfx
     using UnityEngine.Jobs;
     using Survivor.Runtime.Character;
     
-    // TODO : Handle the destruction of the vfx in case the entity is destroyed.
+    // TODO_IMPROVEMENT : Handle the destruction of the vfx in case the entity is destroyed.
     public struct VfxEntityProxy : ICleanupComponentData
     {
         /// <summary>
@@ -31,7 +31,7 @@ namespace Survivor.Runtime.Vfx
         public Entity ProxyEntity;
     }
 
-    // TODO: It will also in charge of destroying the gameobject vfx when the entity is destroyed.
+    // TODO_IMPROVEMENT: It will also in charge of destroying the gameobject vfx when the entity is destroyed.
     /// <summary>
     /// Instantiate a gameobject vfx and make the link between the entity proxy and the gameobject vfx.
     /// Even if the vfx is already loaded, there will be a one frame delay before the vfx is actually instantiated.
@@ -39,7 +39,7 @@ namespace Survivor.Runtime.Vfx
     [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
     public partial class InstantiateGameObjectVfxSystem : SystemBase
     {
-        // TODO: use pools in case of short lived Vfxs.
+        // TODO_IMPROVEMENT: use pools in case of short lived Vfxs.
         private AsyncOperationHandle<VfxPrefabsSettingsContainer> _vfxPrefabsSettingsContainerHandle;
         private VfxPrefabsSettingsContainer _vfxPrefabsSettingsContainer;
 
@@ -251,7 +251,7 @@ namespace Survivor.Runtime.Vfx
                                 }
                                 else
                                 {
-                                    // TODO: handle vfx without owner, if we ever have this case.
+                                    // TODO_FEATURE: handle vfx without owner, if we ever have this case.
                                 }
                             }
                             else
@@ -347,7 +347,7 @@ namespace Survivor.Runtime.Vfx
     [UpdateInGroup(typeof(PresentationSystemGroup), OrderLast = true)]
     public partial class SynchronizeVfxGameObjectFromProxy : SystemBase
     {
-        // TODO: should move some data in a singleton or something equivalent to remove this hard dependency?
+        // TODO_IMPROVEMENT: should move some data in a singleton or something equivalent to remove this hard dependency?
         /// <summary>
         /// This is the system that contains the data linkind the entity proxy and the gameobject.
         /// </summary>
@@ -393,7 +393,7 @@ namespace Survivor.Runtime.Vfx
             if (_instantiateGameObjectVfxSystem.HasVfxGameObjectsChangedSinceLastFrame)
             {
                 InitializeTransformContainers(_vfxProxyQuery.CalculateEntityCount());
-                // TODO: improve this, this is ugly.
+                // TODO_IMPROVEMENT: improve this, this is ugly.
                 // We need to update the value as the system might not update next frame.
                 _instantiateGameObjectVfxSystem.HasVfxGameObjectsChangedSinceLastFrame = false;
             }

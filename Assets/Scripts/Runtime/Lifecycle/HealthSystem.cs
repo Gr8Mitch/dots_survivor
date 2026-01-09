@@ -48,7 +48,7 @@ namespace Survivor.Runtime.Lifecycle
             {
                 if (DamagesPerEntity.TryGetFirstValue(entity, out DamagesContainer.DamageData damagesData, out var iterator))
                 {
-                    // TODO: handle vfx when taking damage (numbers + blinking ?)
+                    // TODO_IMPROVEMENT: handle vfx when taking damage (numbers + blinking ?)
                     healthComponent.HitPoints = (ushort)math.max(0, healthComponent.HitPoints - damagesData.Damages);
                     while (DamagesPerEntity.TryGetNextValue(out damagesData, ref iterator))
                     {

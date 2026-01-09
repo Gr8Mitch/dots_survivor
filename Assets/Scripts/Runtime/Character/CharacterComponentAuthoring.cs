@@ -84,7 +84,7 @@ namespace Survivor.Runtime.Character
     
     public class CharacterComponentAuthoring : MonoBehaviour
     {
-        // TODO: put some settings in a scriptable object common to all characters or enemies?
+        // TODO_IMPROVEMENT: put some settings in a scriptable object common to all characters or enemies?
         [Tooltip("The maximum speed of the character (m/s).")]
         public float MovementMaxSpeed = 15f;
 

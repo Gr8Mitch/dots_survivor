@@ -157,7 +157,7 @@ namespace Survivor.Runtime.Vfx
         [SerializeField]
         private Vector3 _localPosition;
         
-        // TODO: if by any chance we need several VisualEffect on the prefab, add container for secondary IVfxSettings.
+        // TODO_IMPROVEMENT: if by any chance we need several VisualEffect on the prefab, add container for secondary IVfxSettings.
         /// <summary>
         /// Contains all the specific vfx data to tweak the visual effect in the prefab.
         /// </summary>

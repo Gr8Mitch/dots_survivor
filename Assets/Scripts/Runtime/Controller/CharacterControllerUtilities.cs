@@ -219,7 +219,7 @@ namespace Survivor.Runtime.Controller
             in CastColliderData castColliderData,
             out bool hasOverlaps)
         {
-             // TODO: iterate multiple times to integrate all the collisions more accurately?
+             // TODO_IMPROVEMENT: iterate multiple times to integrate all the collisions more accurately?
             hasOverlaps = false;
             float3 castStart = localTransform.Position;
             float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
@@ -311,7 +311,7 @@ namespace Survivor.Runtime.Controller
                 return;
             }
             
-            // TODO: iterate multiple times to integrate all the collisions more accurately?
+            // TODO_IMPROVEMENT: iterate multiple times to integrate all the collisions more accurately?
             float remainingDistance = math.length(characterBodyData.Velocity) * deltaTime;
             float3 movementDirection = math.normalizesafe(characterBodyData.Velocity);
             float3 transformUp = math.mul(localTransform.Rotation, math.up());
@@ -371,7 +371,7 @@ namespace Survivor.Runtime.Controller
             NativeList<DistanceHit> transientDataDistanceHits, 
             in CastColliderData castColliderData)
         {
-            // TODO: for now don't do anything if not ground. Should we change that?
+            // TODO_IMPROVEMENT: for now don't do anything if not grounded. Should we change that?
             if (!characterBodyData.IsGrounded)
             {
                 return;

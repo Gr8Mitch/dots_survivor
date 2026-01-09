@@ -34,7 +34,7 @@ namespace Survivor.Runtime.Ability
         [SerializeField]
         private float _minimalDistanceToTarget = 10f;
 
-        //TODO : we can probably change this with some flags for some settings (like target closest or shoot at random, etc...)
+        //TODO_IMPROVEMENT : we can probably change this with some flags for some settings (like target closest or shoot at random, etc...)
         
         public override void Bake(Entity abilityEntity, AbilitiesContainerAuthoring.AbilitiesContainerAuthoringBaker baker)
         {

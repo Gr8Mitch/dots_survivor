@@ -9,7 +9,7 @@ namespace Survivor.Runtime.Vfx
     /// </summary>
     public struct CharacterAbilityVfxOwnerComponent : IComponentData
     {
-        //TODO: use flags to reduce the size of this struct if we add more bools.
+        //TODO_IMPROVEMENT: use flags to reduce the size of this struct if we add more bools.
         public bool ReplicateCharacterPosition;
         public bool AlignWithCharacterGround;
     }
@@ -21,7 +21,7 @@ namespace Survivor.Runtime.Vfx
     {
         public Entity CharacterEntity;
         public float3 PositionOffset;
-        //TODO: use flags to reduce the size of this struct if we add more bools.
+        //TODO_IMPROVEMENT: use flags to reduce the size of this struct if we add more bools.
         public bool ReplicateCharacterPosition;
         public bool AlignWithCharacterGround;
     }

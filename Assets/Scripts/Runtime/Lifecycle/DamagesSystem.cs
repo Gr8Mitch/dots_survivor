@@ -279,7 +279,7 @@ namespace Survivor.Runtime.Lifecycle
             
             public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
             {
-                // TODO : check if we really have performance difference using the pointers.
+                // TODO_IMPROVEMENT : check if we really have performance difference using the pointers.
                 var entities = chunk.GetNativeArray(EntityTypeHandle);
                 var damageDealers = chunk.GetNativeArray(ref DamageDealerTypeHandle);
                 var localToWorlds = chunk.GetNativeArray(ref LocalToWorldTypeHandle);
@@ -315,7 +315,7 @@ namespace Survivor.Runtime.Lifecycle
                         {
                             if (isTargetedDamages && targetedDamages[i].Target != enemyDamageReceiver.Entity)
                             {
-                                // TODO: do a separate loop specific for isTargetedDamages for performance purpose? 
+                                // TODO_IMPROVEMENT: do a separate loop specific for isTargetedDamages for performance purpose? 
                                 continue;
                             }
 
@@ -333,8 +333,7 @@ namespace Survivor.Runtime.Lifecycle
 
                         if (hasInflictedDamages && mustBeDestroyedOnDamage)
                         {
-                            // TODO: create a common flow for the projectiles to be destroyed, like adding a command somewhere, or create an entity.
-                            EcbParallel.DestroyEntity(unfilteredChunkIndex, entities[i]);
+                            EcbParallel.AddComponent<PendingDestruction>(unfilteredChunkIndex, entities[i]);
                         }
                     }
                 }

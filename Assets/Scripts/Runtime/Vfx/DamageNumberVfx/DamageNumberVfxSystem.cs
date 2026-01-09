@@ -132,9 +132,8 @@ namespace Survivor.Runtime.Vfx
                         Value = rootMatrix
                     });
 
-                    // TODO: either use a constant or make it editable in a scriptable object or so.
+                    // TODO_IMPROVEMENT: either use a constant or make it editable in a scriptable object or so.
                     float3 numbersPosition = entry.Value.Position + new float3(0f, 3f, 0f);
-                    // TODO: should we use a specific quaternion for each digit? I guess one for the whole bunch is ok
                     quaternion vfxRotation = quaternion.LookRotation(cameraForward, math.up());
                     Ecb.AddComponent(rootEntity, new LocalTransform()
                     {
@@ -189,7 +188,7 @@ namespace Survivor.Runtime.Vfx
                     localTransform.Position += new float3(0f, VFX_SPEED * DeltaTime, 0f);
                     // No need to change the rotation regarding the billboard as long as the camera is not rotating.
                     
-                    // TODO: change the alpha with time?
+                    // TODO_IMPROVEMENT: change the alpha with time?
                 }
                 else
                 {
