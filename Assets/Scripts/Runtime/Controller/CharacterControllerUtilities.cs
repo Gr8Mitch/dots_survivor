@@ -15,11 +15,11 @@ namespace Survivor.Runtime.Controller
     public struct CastCollidersContainer : IComponentData
     {
         public CastColliderData PlayerCastColliderData;
-        public NativeHashMap<int, CastColliderData> EnemiesCastColliderData;
+        public NativeHashMap<EnemyTypeId, CastColliderData> EnemiesCastColliderData;
 
         public void AllocateData(int enemiesCount, Allocator allocator)
         {
-            EnemiesCastColliderData = new NativeHashMap<int, CastColliderData>(enemiesCount, allocator);
+            EnemiesCastColliderData = new NativeHashMap<EnemyTypeId, CastColliderData>(enemiesCount, allocator);
         }
 
         public void Dispose()
@@ -33,7 +33,7 @@ namespace Survivor.Runtime.Controller
             EnemiesCastColliderData.Dispose();
         }
 
-        public CastColliderData GetColliderData(int? enemyTypeId)
+        public CastColliderData GetColliderData(EnemyTypeId? enemyTypeId)
         {
             if (enemyTypeId == null)
             {

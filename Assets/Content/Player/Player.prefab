@@ -326,4 +326,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8befb2acd1d58e147bb56fbab77251bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.OwnedAbilitiesAuthoring
-  AbilitiesIds: 0000
+  AbilitiesIds:
+  - Value: 0

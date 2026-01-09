@@ -9,7 +9,7 @@ namespace Survivor.Runtime.Ability
         [Header("General")]
         [Tooltip("The unique id of the ability")]
         [SerializeField]
-        private ushort _abilityId;
+        private AbilityId _abilityId;
         
         [SerializeField]
         private string _debugName;
@@ -27,7 +27,9 @@ namespace Survivor.Runtime.Ability
         [SerializeField]
         private bool _alignWithCharacterGround = true;
 
-        public ushort AbilityId => _abilityId;
+        public AbilityId AbilityId => _abilityId;
+        
+        public string DebugName => _debugName;
 
         /// <summary>
         /// Creates the components according to the type of ability.

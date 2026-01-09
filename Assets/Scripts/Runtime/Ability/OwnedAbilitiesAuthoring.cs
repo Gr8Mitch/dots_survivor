@@ -2,16 +2,13 @@ namespace Survivor.Runtime.Ability
 {
     using Unity.Entities;
     using UnityEngine;
-    
-    // TODO_EDITOR: make it a specific type for the ability Id to be able to create a specific drawer and ensure its uniqueness.
-    
+
     /// <summary>
     /// The (character) entity that owns this ability.
     /// </summary>
     public struct AbilityComponent : IComponentData
     {
-        // TODO: Make it a specific type to be able to create a specific drawer and ensure its uniqueness.
-        public ushort AbilityId;
+        public AbilityId AbilityId;
         public Entity Owner;
     }
 
@@ -31,7 +28,7 @@ namespace Survivor.Runtime.Ability
     [InternalBufferCapacity(8)]
     public struct PendingAbility : IBufferElementData, IEnableableComponent
     {
-        public ushort AbilityId;
+        public AbilityId AbilityId;
     }
     
     /// <summary>
@@ -40,7 +37,8 @@ namespace Survivor.Runtime.Ability
     class OwnedAbilitiesAuthoring : MonoBehaviour
     {
         [Tooltip("The ids of the abilities that can be used by the owner")]
-        public ushort[] AbilitiesIds;
+        [AbilityIdReference]
+        public AbilityId[] AbilitiesIds;
         
         class OwnedAbilitiesAuthoringBaker : Baker<OwnedAbilitiesAuthoring>
         {
@@ -48,13 +46,16 @@ namespace Survivor.Runtime.Ability
             {
                 var entity = GetEntity(TransformUsageFlags.None);
                 AddBuffer<OwnedAbility>(entity);
-                var pendingAbilities = AddBuffer<PendingAbility>(entity);
-                foreach (ushort abilityId in authoring.AbilitiesIds)
+                if (authoring.AbilitiesIds != null)
                 {
-                    pendingAbilities.Add(new PendingAbility()
+                    var pendingAbilities = AddBuffer<PendingAbility>(entity);
+                    foreach (AbilityId abilityId in authoring.AbilitiesIds)
                     {
-                        AbilityId = abilityId
-                    });
+                        pendingAbilities.Add(new PendingAbility()
+                        {
+                            AbilityId = abilityId
+                        });
+                    }
                 }
             }
         }

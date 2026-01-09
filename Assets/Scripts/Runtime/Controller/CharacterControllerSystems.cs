@@ -141,7 +141,7 @@ namespace Survivor.Runtime.Controller
             for (int i = 0; i < enemyPrefabsContainer.Length; ++i)
             {
                 var enemyCollider = physicsColliderLookup[enemyPrefabsContainer[i].EnemyPrefab];
-                int enemyId = enemyCharacterComponentLookup[enemyPrefabsContainer[i].EnemyPrefab].EnemyTypeId;
+                EnemyTypeId enemyId = enemyCharacterComponentLookup[enemyPrefabsContainer[i].EnemyPrefab].EnemyTypeId;
 
                 if (CharacterControllerUtilities.GenerateCastCollider(in enemyCollider,
                         in _castToEnvironmentCollisionFilter, out var enemyGroundCastCollider))

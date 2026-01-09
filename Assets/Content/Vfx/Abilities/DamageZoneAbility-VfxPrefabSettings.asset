@@ -19,7 +19,8 @@ MonoBehaviour:
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 
+    m_CachedAsset: {fileID: 7915150328755889627, guid: 685e9ddf7e6d19446b6d1d8b500a802e, type: 3}
+    m_CachedGUID: 685e9ddf7e6d19446b6d1d8b500a802e
     m_EditorAssetChanged: 0
   _localPosition: {x: 0, y: 0.5, z: 0}
-  _localRotationEuler: {x: 0, y: 0, z: 0}
   _vfxSettings: {fileID: 11400000, guid: 1c8e2fa60c43c724684d8653eab06e53, type: 2}

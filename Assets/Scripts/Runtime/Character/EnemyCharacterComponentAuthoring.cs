@@ -3,20 +3,18 @@ namespace Survivor.Runtime.Character
     using UnityEngine;
     using UnityEngine.Serialization;
     using Unity.Entities;
-
-    // TODO_EDITOR: make a specific type for the EnemyType to have a specific drawer and ensure its uniqueness.
     
     /// <summary>
     /// A component to identify the enemy characters.
     /// </summary>
     public struct EnemyCharacterComponent : IComponentData
     {
-        public int EnemyTypeId;
+        public EnemyTypeId EnemyTypeId;
     }
     
-    class EnemyCharacterComponentAuthoring : MonoBehaviour
+    public class EnemyCharacterComponentAuthoring : MonoBehaviour
     {
-        [FormerlySerializedAs("EnemyId")] public int EnemyTypeId;
+        [FormerlySerializedAs("EnemyId")] public EnemyTypeId EnemyTypeId;
         
         class EnemyCharacterComponentAuthoringBaker : Baker<EnemyCharacterComponentAuthoring>
         {

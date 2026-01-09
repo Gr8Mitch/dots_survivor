@@ -4,6 +4,7 @@ namespace Survivor.Runtime.Enemy
     using Unity.Entities;
     using UnityEngine;
     using UnityEngine.Serialization;
+    using Survivor.Runtime.Character;
 
     /// <summary>
     /// Used to spawn enemies continuously.
@@ -14,7 +15,7 @@ namespace Survivor.Runtime.Enemy
         /// <summary>
         /// The enemy type to spawn.
         /// </summary>
-        public int EnemyTypeId;
+        public EnemyTypeId EnemyTypeId;
         
         /// <summary>
         /// The max radius (in meters) around the spawner where enemies can spawn.
@@ -47,7 +48,9 @@ namespace Survivor.Runtime.Enemy
         /// <summary>
         /// The enemy type to spawn.
         /// </summary>
-        [FormerlySerializedAs("EnemyType")] public int EnemyTypeId;
+        [FormerlySerializedAs("EnemyType")] 
+        [EnemyTypeIdReference]
+        public EnemyTypeId EnemyTypeId;
         
         /// <summary>
         /// The radius (in meters) around the spawner where enemies can spawn.

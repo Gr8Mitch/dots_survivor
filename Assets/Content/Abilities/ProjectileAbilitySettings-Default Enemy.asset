@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: beabe0ab17ddff046828f37048de2674, type: 3}
   m_Name: ProjectileAbilitySettings-Default Enemy
   m_EditorClassIdentifier: Survivor.Runtime::Survivor.Runtime.Ability.ProjectileAbilitySettings
-  _abilityId: 1
+  _abilityId:
+    Value: 1
   _debugName: Default Projectile ability - Enemy
   _vfxPrefabSettings: {fileID: 0}
   _replicateCharacterPosition: 0
@@ -20,6 +21,5 @@ MonoBehaviour:
   _projectilePrefab: {fileID: 887173161433994726, guid: e50691bc0830a104d96988f3ae3fff1e, type: 3}
   _damages: 1
   _launchInterval: 1
-  _lifetime: 10
   _initialVelocity: 10
   _minimalDistanceToTarget: 20
